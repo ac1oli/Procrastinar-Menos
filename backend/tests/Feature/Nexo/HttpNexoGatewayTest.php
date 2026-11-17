@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Nexo;
 
+use App\Modules\Nexo\Data\EmbeddingPurpose;
 use App\Modules\Nexo\Data\ReplyContext;
+use App\Modules\Nexo\Data\Turn;
 use App\Modules\Nexo\Exceptions\AiFailure;
 use App\Modules\Nexo\Exceptions\AiUnavailableException;
 use App\Modules\Nexo\Gateway\HttpNexoGateway;
@@ -50,7 +52,8 @@ class HttpNexoGatewayTest extends TestCase
         $this->assertSame('qwen3:8b', $reply->model);
         Http::assertSent(fn (Request $r) => $r->hasHeader('Authorization', 'Bearer '.self::TOKEN)
             && $r['message'] === 'Estou cansado'
-            && $r['context'] === ['timezone' => 'America/Sao_Paulo', 'local_datetime' => '2026-11-17T20:00:00-03:00']);
+            && $r['context'] === ['timezone' => 'America/Sao_Paulo', 'local_datetime' => '2026-11-17T20:00:00-03:00', 'memories' => []]
+            && $r['history'] === []);
     }
 
     public function test_reply_strips_leaked_reasoning(): void
@@ -147,6 +150,61 @@ class HttpNexoGatewayTest extends TestCase
 
         $this->assertFailure(AiFailure::InvalidResponse, fn () => $this->gateway()->embed(['a']));
         $this->assertFailure(AiFailure::InvalidResponse, fn () => $this->gateway()->embed(['a']));
+    }
+
+    public function test_reply_sends_history_and_authorized_context(): void
+    {
+        Http::fake([self::URL.'/v1/nexo/reply' => Http::response(['reply' => 'Ok.', 'model' => 'm', 'prompt_version' => 'p'])]);
+
+        $context = $this->context()->with(
+            [['kind' => 'preferencia', 'content' => 'Prefere estudar de manhã.']],
+            ['routine_today' => ['07:00–08:00 Estudo'], 'goals' => []],
+        );
+        $this->gateway()->reply('E hoje?', $context, [new Turn('user', 'Oi'), new Turn('assistant', 'Olá!')]);
+
+        Http::assertSent(fn (Request $r) => $r['history'] === [
+            ['role' => 'user', 'content' => 'Oi'],
+            ['role' => 'assistant', 'content' => 'Olá!'],
+        ]
+            && $r['context']['memories'] === [['kind' => 'preferencia', 'content' => 'Prefere estudar de manhã.']]
+            && $r['context']['profile']['routine_today'] === ['07:00–08:00 Estudo']);
+    }
+
+    public function test_embed_sends_purpose(): void
+    {
+        Http::fake([self::URL.'/v1/embed' => Http::response(['model' => 'e', 'dimensions' => 3, 'vectors' => [[1, 0, 0]]])]);
+
+        $this->gateway()->embed(['quando estudar?'], EmbeddingPurpose::Query);
+        $this->gateway()->embed(['Prefere manhãs.']);
+
+        Http::assertSent(fn (Request $r) => $r['purpose'] === 'query');
+        Http::assertSent(fn (Request $r) => $r['purpose'] === 'document');
+    }
+
+    public function test_suggest_memories_parses_contract(): void
+    {
+        Http::fake([self::URL.'/v1/nexo/suggest' => Http::response(['suggestions' => [
+            ['kind' => 'preferencia', 'content' => 'Prefere manhãs.', 'rationale' => 'Você disse.', 'sensitivity' => 'normal'],
+            ['kind' => 'padrao', 'content' => 'Outra.', 'rationale' => '', 'sensitivity' => 'normal'],
+        ], 'model' => 'm', 'prompt_version' => 'p'])]);
+
+        $suggestions = $this->gateway()->suggestMemories(new Turn('user', 'a'), new Turn('assistant', 'b'), 1);
+
+        $this->assertCount(1, $suggestions);
+        $this->assertSame('Prefere manhãs.', $suggestions[0]->content);
+        Http::assertSent(fn (Request $r) => $r['max_suggestions'] === 1 && count($r['exchange']) === 2);
+    }
+
+    public function test_suggest_memories_rejects_malformed_items(): void
+    {
+        Http::fake([self::URL.'/v1/nexo/suggest' => Http::sequence()
+            ->push(['suggestions' => 'x'])
+            ->push(['suggestions' => [['kind' => 'preferencia', 'content' => ['x'], 'rationale' => '', 'sensitivity' => 'normal']]]),
+        ]);
+
+        $call = fn () => $this->gateway()->suggestMemories(new Turn('user', 'a'), new Turn('assistant', 'b'), 2);
+        $this->assertFailure(AiFailure::InvalidResponse, $call);
+        $this->assertFailure(AiFailure::InvalidResponse, $call);
     }
 
     public function test_is_available_never_throws(): void

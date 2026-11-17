@@ -3,9 +3,12 @@
 namespace App\Modules\Nexo\Gateway;
 
 use App\Modules\Nexo\Contracts\NexoGateway;
+use App\Modules\Nexo\Data\EmbeddingPurpose;
 use App\Modules\Nexo\Data\Embeddings;
 use App\Modules\Nexo\Data\NexoReply;
 use App\Modules\Nexo\Data\ReplyContext;
+use App\Modules\Nexo\Data\SuggestedMemory;
+use App\Modules\Nexo\Data\Turn;
 use App\Modules\Nexo\Exceptions\AiFailure;
 use App\Modules\Nexo\Exceptions\AiUnavailableException;
 use App\Modules\Nexo\Support\ReasoningSanitizer;
@@ -31,13 +34,16 @@ final class HttpNexoGateway implements NexoGateway
         private readonly float $embedTimeout,
         private readonly float $healthTimeout,
         private readonly int $embeddingDimensions,
+        private readonly float $queryEmbedTimeout = 4,
+        private readonly float $suggestTimeout = 90,
     ) {}
 
-    public function reply(string $message, ReplyContext $context): NexoReply
+    public function reply(string $message, ReplyContext $context, array $history = []): NexoReply
     {
         $data = $this->post('/v1/nexo/reply', [
             'message' => $message,
             'context' => $context->toArray(),
+            'history' => array_map(fn (Turn $turn) => $turn->toArray(), $history),
         ], $this->replyTimeout);
 
         $text = is_string($data['reply'] ?? null) ? ReasoningSanitizer::strip($data['reply']) : '';
@@ -48,9 +54,13 @@ final class HttpNexoGateway implements NexoGateway
         return new NexoReply($text, $data['model'], $data['prompt_version']);
     }
 
-    public function embed(array $texts): Embeddings
+    public function embed(array $texts, EmbeddingPurpose $purpose = EmbeddingPurpose::Document): Embeddings
     {
-        $data = $this->post('/v1/embed', ['texts' => array_values($texts)], $this->embedTimeout);
+        $data = $this->post(
+            '/v1/embed',
+            ['texts' => array_values($texts), 'purpose' => $purpose->value],
+            $purpose === EmbeddingPurpose::Query ? $this->queryEmbedTimeout : $this->embedTimeout,
+        );
 
         $vectors = $data['vectors'] ?? null;
         $valid = is_array($vectors)
@@ -75,6 +85,30 @@ final class HttpNexoGateway implements NexoGateway
             $data['model'],
             $this->embeddingDimensions,
         );
+    }
+
+    public function suggestMemories(Turn $user, Turn $assistant, int $max): array
+    {
+        $data = $this->post('/v1/nexo/suggest', [
+            'exchange' => [$user->toArray(), $assistant->toArray()],
+            'max_suggestions' => $max,
+        ], $this->suggestTimeout);
+
+        $items = $data['suggestions'] ?? null;
+        if (! is_array($items) || ! array_is_list($items)) {
+            throw $this->fail(AiFailure::InvalidResponse, 'sugestões fora do contrato');
+        }
+
+        $fields = ['kind', 'content', 'rationale', 'sensitivity'];
+        $suggestions = [];
+        foreach (array_slice($items, 0, $max) as $item) {
+            if (! is_array($item) || array_filter($fields, fn ($f) => ! is_string($item[$f] ?? null)) !== []) {
+                throw $this->fail(AiFailure::InvalidResponse, 'sugestão fora do contrato');
+            }
+            $suggestions[] = new SuggestedMemory($item['kind'], $item['content'], $item['rationale'], $item['sensitivity']);
+        }
+
+        return $suggestions;
     }
 
     public function isAvailable(): bool

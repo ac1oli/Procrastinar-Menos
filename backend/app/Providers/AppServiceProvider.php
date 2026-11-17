@@ -25,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
             embedTimeout: (float) config('nexo.ai_service.embed_timeout'),
             healthTimeout: (float) config('nexo.ai_service.health_timeout'),
             embeddingDimensions: (int) config('nexo.embedding_dimensions'),
+            queryEmbedTimeout: (float) config('nexo.ai_service.query_embed_timeout'),
+            suggestTimeout: (float) config('nexo.ai_service.suggest_timeout'),
         ));
     }
 

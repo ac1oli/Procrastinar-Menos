@@ -2,9 +2,12 @@
 
 namespace App\Modules\Nexo\Contracts;
 
+use App\Modules\Nexo\Data\EmbeddingPurpose;
 use App\Modules\Nexo\Data\Embeddings;
 use App\Modules\Nexo\Data\NexoReply;
 use App\Modules\Nexo\Data\ReplyContext;
+use App\Modules\Nexo\Data\SuggestedMemory;
+use App\Modules\Nexo\Data\Turn;
 use App\Modules\Nexo\Exceptions\AiUnavailableException;
 
 /**
@@ -16,15 +19,28 @@ use App\Modules\Nexo\Exceptions\AiUnavailableException;
  */
 interface NexoGateway
 {
-    /** @throws AiUnavailableException */
-    public function reply(string $message, ReplyContext $context): NexoReply;
+    /**
+     * @param  list<Turn>  $history  turnos anteriores (contexto temporário)
+     *
+     * @throws AiUnavailableException
+     */
+    public function reply(string $message, ReplyContext $context, array $history = []): NexoReply;
 
     /**
      * @param  list<string>  $texts
      *
      * @throws AiUnavailableException
      */
-    public function embed(array $texts): Embeddings;
+    public function embed(array $texts, EmbeddingPurpose $purpose = EmbeddingPurpose::Document): Embeddings;
+
+    /**
+     * Propostas de memória a partir de uma troca. Não grava nada.
+     *
+     * @return list<SuggestedMemory>
+     *
+     * @throws AiUnavailableException
+     */
+    public function suggestMemories(Turn $user, Turn $assistant, int $max): array;
 
     /** Verificação rápida; nunca lança exceção. */
     public function isAvailable(): bool;
