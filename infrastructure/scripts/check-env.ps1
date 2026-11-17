@@ -26,8 +26,12 @@ function Write-Check([string]$Name, [bool]$Ok, [string]$Detail) {
     if (-not $Ok) { $script:failures++ }
 }
 
-function Test-Tool([string]$Name, [string]$Cmd, [string[]]$VersionArgs = @('--version')) {
+function Test-Tool([string]$Name, [string]$Cmd, [string[]]$VersionArgs = @('--version'), [string]$OptionalUntil) {
     $c = Get-Command $Cmd -ErrorAction SilentlyContinue
+    if (-not $c -and $OptionalUntil) {
+        Write-Host ("[ -- ] {0,-22} não instalado (necessário a partir da {1})" -f $Name, $OptionalUntil) -ForegroundColor DarkGray
+        return
+    }
     if (-not $c) { Write-Check $Name $false 'não encontrado no PATH'; return }
     $v = (& $Cmd @VersionArgs 2>&1 | Select-Object -First 1) -as [string]
     Write-Check $Name $true $v.Trim()
@@ -40,7 +44,7 @@ Test-Tool 'pnpm'     'pnpm'
 Test-Tool 'Python'   'python'
 Test-Tool 'Docker'   'docker'
 Test-Tool 'Ollama'   'ollama'
-Test-Tool '.NET SDK' 'dotnet'
+Test-Tool '.NET SDK' 'dotnet' -OptionalUntil 'FASE 5'
 
 Write-Host "`n== WSL2 / Docker ==" -ForegroundColor Cyan
 $wsl = (wsl --status 2>&1 | Out-String) -replace "`0", ''
