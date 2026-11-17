@@ -113,4 +113,4 @@ Modelo local: ver [ADR-0004](docs/decisions/0004-modelo-local.md).
 - [ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md) — Autenticação de usuários e dispositivos (+ ciclo de vida dos tokens)
 - [ADR-0006](docs/decisions/0006-retencao-e-exclusao-de-conta.md) — Retenção de auditoria e exclusão de conta
 - [ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md) — Serviço de IA: contrato, segurança e resiliência
-- [ADR-0008](docs/decisions/0008-memoria-do-nexo.md) — Memória do NEXO: histórico, memória de longo prazo e contexto temporário (**proposta**; ver [arquitetura da memória](docs/architecture/memoria-do-nexo.md))
+- [ADR-0008](docs/decisions/0008-memoria-do-nexo.md) — Memória do NEXO: histórico, memória de longo prazo e contexto temporário (aceita; ver [arquitetura da memória](docs/architecture/memoria-do-nexo.md))

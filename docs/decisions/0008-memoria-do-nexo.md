@@ -1,6 +1,6 @@
 # ADR-0008 — Memória do NEXO: histórico, memória de longo prazo e contexto temporário
 
-- **Status:** proposta — **aguardando aprovação do proprietário** (seção 6)
+- **Status:** aceita — aprovada pelo proprietário com os ajustes da seção 7
 - **Data:** 2026-11-17
 - **Relacionados:** [ADR-0003](0003-nexo-ai-gateway.md) (memória fora do modelo),
   [ADR-0006](0006-retencao-e-exclusao-de-conta.md) (retenção e exclusão),
@@ -230,12 +230,12 @@ Branch `feat/nexo-memoria`, em commits pequenos, cada um com testes:
 6. Exclusão de conta estendida, exportação e diário de exclusões. Backup na sequência,
    conforme D9.
 
-## 6. Decisões pendentes do proprietário
+## 6. Decisões do proprietário
 
-Cada item traz a recomendação técnica. As consequências estão detalhadas na
-[proposta de arquitetura](../architecture/memoria-do-nexo.md#decisões-pendentes).
+Todas as recomendações foram aprovadas (ajustes na seção 7). Consequências de cada alternativa na
+[proposta de arquitetura](../architecture/memoria-do-nexo.md#decisões-aprovadas).
 
-| # | Decisão | Recomendação |
+| # | Decisão | Decisão aprovada |
 |---|---|---|
 | D1 | Padrão do histórico de conversas | Escolha obrigatória no onboarding, sem opção pré-marcada |
 | D2 | Retenção padrão do histórico | 90 dias, ajustável (30 / 90 / 365 / até eu excluir) |
@@ -247,3 +247,23 @@ Cada item traz a recomendação técnica. As consequências estão detalhadas na
 | D8 | Row-Level Security no PostgreSQL | Adotar já nas tabelas do NEXO |
 | D9 | Criptografia e destino do backup | BitLocker no disco + backup cifrado em disco/unidade separada; nuvem só na FASE 6 |
 | D10 | Fluxo das sugestões de memória | Aviso discreto na conversa + caixa de sugestões; pendência expira em 14 dias |
+
+## 7. Ajustes aprovados pelo proprietário (2026-11-17)
+
+- **D1:** a autorização do histórico é pedida no primeiro acesso, sem opção pré-marcada.
+- **D5, reforços:**
+  - mascaramento **antes** da persistência;
+  - conversas privadas não são armazenadas;
+  - conteúdo sensível não vai para logs, erros ou ferramentas de diagnóstico;
+  - a detecção automática **não** é tratada como proteção infalível (a política e a interface
+    dizem isso);
+  - dados derivados seguem as mesmas regras.
+- **D7:** a exclusão vem pré-selecionada, mas só ocorre com confirmação explícita do usuário.
+- **D8:** RLS aplicada pela própria conexão da aplicação, que não pode ter `BYPASSRLS` nem ser
+  superusuário ou dona das tabelas. Tarefas de sistema não usam um papel com bypass: definem
+  explicitamente o usuário-alvo da operação. Testes de isolamento obrigatórios.
+- **D9:** verificar o BitLocker antes. Se estiver desligado, apresentar o diagnóstico e pedir
+  autorização antes de habilitar. Backup cifrado em dispositivo físico separado, sem nuvem
+  nesta fase, com restauração, recuperação e reaplicação de exclusões documentadas.
+- **Geral:** nenhuma alteração destrutiva no banco principal sem autorização; testes sem
+  dados pessoais reais.

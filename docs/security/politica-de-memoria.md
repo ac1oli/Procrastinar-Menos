@@ -1,12 +1,12 @@
 # Política de memória do NEXO
 
-- **Versão:** 0.1 — 2026-11-17 — **proposta, não vigente**
-- **Decisão:** [ADR-0008](../decisions/0008-memoria-do-nexo.md) (aguardando aprovação)
+- **Versão:** 1.0 — 2026-11-17 — aprovada; vale para cada parte à medida que é implementada
+- **Decisão:** [ADR-0008](../decisions/0008-memoria-do-nexo.md) (aceita)
 - **Arquitetura:** [memoria-do-nexo.md](../architecture/memoria-do-nexo.md)
 
 Esta política descreve, em linguagem direta, o que o NEXO pode lembrar, como a pessoa
-controla isso e o que acontece com os dados. Ela se torna vigente quando o ADR-0008 for
-aceito. Os pontos marcados com **(Dn)** dependem das decisões pendentes do proprietário.
+controla isso e o que acontece com os dados. Os marcadores **(Dn)** remetem às decisões
+aprovadas no ADR-0008.
 
 ## 1. O que o NEXO guarda
 

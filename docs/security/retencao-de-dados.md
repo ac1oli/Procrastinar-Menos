@@ -22,7 +22,7 @@
 | Dispositivos e consentimentos | Mantido | **Excluído** (cascata) |
 | Tokens de usuário e de dispositivos | Até expirar/revogar; expirados são apagados após 24 h | **Excluídos** |
 | Sessões | Até o logout/expiração | **Excluídas** |
-| Conversas e memórias do NEXO | **Não armazenadas** ainda; regras propostas na [política de memória](politica-de-memoria.md) (ADR-0008, aguardando aprovação) | — |
+| Conversas e memórias do NEXO | **Não armazenadas** ainda; regras propostas na [política de memória](politica-de-memoria.md) (ADR-0008, aceita; implementação em andamento) | — |
 | Auditoria: IP | 90 dias, depois apagado | **Apagado** |
 | Auditoria: evento | 365 dias, depois excluído | Ver seção 3 |
 

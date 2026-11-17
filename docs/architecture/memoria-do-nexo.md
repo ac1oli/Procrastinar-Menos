@@ -1,10 +1,10 @@
 # Proposta de arquitetura — memória do NEXO
 
-- **Status:** proposta — aguardando aprovação ([ADR-0008](../decisions/0008-memoria-do-nexo.md))
+- **Status:** aprovada ([ADR-0008](../decisions/0008-memoria-do-nexo.md), com os ajustes da seção 7)
 - **Data:** 2026-11-17
 - **Política:** [politica-de-memoria.md](../security/politica-de-memoria.md)
 
-Nada deste documento está implementado. Nomes de colunas e valores numéricos são o ponto de
+A implementação acompanha o ROADMAP. Nomes de colunas e valores numéricos são o ponto de
 partida da implementação. Os valores de recuperação devem ser calibrados com testes.
 
 ## 1. Visão geral
@@ -311,8 +311,8 @@ existentes na execução seguinte. A tela avisa quantas conversas serão apagada
 - `ALTER TABLE … ENABLE ROW LEVEL SECURITY` + `FORCE`, com política
   `user_id = current_setting('app.user_id')::uuid`.
 - O backend executa `SET LOCAL app.user_id` no início de cada transação autenticada.
-- Rotinas de sistema (retenção, exclusão de conta) usam um papel separado com `BYPASSRLS`,
-  limitado a essas tarefas.
+- Nenhum papel usado pela aplicação tem `BYPASSRLS`. Rotinas de sistema (retenção, exclusão
+  de conta) processam um usuário por vez, definindo `app.user_id` para cada um (ADR-0008 §7).
 
 ## 11. Backup e recuperação
 
@@ -333,9 +333,9 @@ Objetivos sugeridos:
 - RPO de 24 h (perda máxima de um dia);
 - RTO de ~1 h no servidor local, a ser medido no primeiro teste de restauração.
 
-## Decisões pendentes
+## Decisões (aprovadas)
 
-A recomendação é a primeira alternativa de cada item.
+O proprietário aprovou a primeira alternativa de cada item, com os ajustes do ADR-0008 §7.
 
 ### D1 — Padrão do histórico de conversas
 | Alternativa | Consequências |
