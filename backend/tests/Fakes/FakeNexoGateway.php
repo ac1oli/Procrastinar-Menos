@@ -36,6 +36,7 @@ final class FakeNexoGateway implements NexoGateway
         public string $replyText = 'Resposta de teste do NEXO.',
         public array $suggestions = [],
         public ?AiFailure $embedFailure = null,
+        public ?AiFailure $suggestFailure = null,
     ) {}
 
     public function reply(string $message, ReplyContext $context, array $history = []): NexoReply
@@ -64,8 +65,8 @@ final class FakeNexoGateway implements NexoGateway
     {
         $this->suggestCalls[] = ['user' => $user, 'assistant' => $assistant];
 
-        if ($this->failure) {
-            throw new AiUnavailableException($this->failure);
+        if ($failure = $this->suggestFailure ?? $this->failure) {
+            throw new AiUnavailableException($failure);
         }
 
         return array_slice($this->suggestions, 0, $max);

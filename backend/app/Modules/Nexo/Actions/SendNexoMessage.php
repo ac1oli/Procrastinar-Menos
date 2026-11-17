@@ -7,6 +7,7 @@ use App\Modules\Consent\ConsentService;
 use App\Modules\Consent\Enums\ConsentScope;
 use App\Modules\Conversations\ConversationRecorder;
 use App\Modules\Conversations\Models\Conversation;
+use App\Modules\Memory\Jobs\SuggestMemories;
 use App\Modules\Memory\Models\Memory;
 use App\Modules\Memory\Retrieval\RetrievedMemory;
 use App\Modules\Nexo\Context\ContextAssembler;
@@ -67,6 +68,11 @@ final class SendNexoMessage
 
         $stored = $persist ? $this->recorder->recordExchange($user, $conversation, $message, $reply) : null;
         $this->recordUsage($user, $memories, $stored['assistant']->id ?? null);
+
+        // Sugestões só a partir de trocas guardadas (nunca de conversas privadas).
+        if ($stored !== null && $this->consents->allows($user, ConsentScope::MemorySuggestions)) {
+            SuggestMemories::dispatch($user->getKey(), $stored['assistant']->id)->afterCommit();
+        }
 
         return new NexoMessageResult(
             reply: $reply,

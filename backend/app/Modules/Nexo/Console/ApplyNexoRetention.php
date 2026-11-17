@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Conversations\Models\Conversation;
 use App\Modules\Memory\Enums\MemoryStatus;
 use App\Modules\Memory\Models\Memory;
+use App\Modules\Memory\Models\MemorySuggestion;
 use App\Modules\Shared\Database\DatabaseUserScope;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -44,6 +45,7 @@ class ApplyNexoRetention extends Command
 
         return [
             'conversations' => Conversation::ownedBy($user)->where('expires_at', '<', now())->delete(),
+            'suggestions' => MemorySuggestion::ownedBy($user)->where('expires_at', '<=', now())->delete(),
             // Memórias não expiram (D3): sem uso nem revisão, pedem revisão.
             'memories_to_review' => Memory::ownedBy($user)
                 ->where('status', MemoryStatus::Active)

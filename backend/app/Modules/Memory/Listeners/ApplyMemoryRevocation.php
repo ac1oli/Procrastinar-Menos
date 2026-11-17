@@ -7,6 +7,7 @@ use App\Modules\Consent\Enums\DataAction;
 use App\Modules\Consent\Events\ConsentRevoked;
 use App\Modules\Memory\Enums\MemorySensitivity;
 use App\Modules\Memory\Models\Memory;
+use App\Modules\Memory\Models\MemorySuggestion;
 
 /**
  * Revogação de nexo.memory ou nexo.memory.sensitive (D7). "Excluir" apaga as
@@ -17,6 +18,13 @@ class ApplyMemoryRevocation
 {
     public function handle(ConsentRevoked $event): void
     {
+        // Sugestões pendentes não têm finalidade própria: saem sempre.
+        if ($event->scope === ConsentScope::MemorySuggestions) {
+            MemorySuggestion::ownedBy($event->user)->delete();
+
+            return;
+        }
+
         if ($event->dataAction !== DataAction::Delete) {
             return;
         }

@@ -8,6 +8,7 @@ use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
 use App\Modules\Identity\Http\Controllers\AuthController;
 use App\Modules\Memory\Http\Controllers\MemoryController;
+use App\Modules\Memory\Http\Controllers\MemorySuggestionController;
 use App\Modules\Nexo\Http\Controllers\NexoController;
 use App\Modules\Routine\Http\Controllers\RoutineBlockController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +55,10 @@ Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () 
     Route::delete('nexo/conversations/{conversation}', [ConversationController::class, 'destroy']);
     Route::delete('nexo/conversations/{conversation}/messages/{message}', [ConversationController::class, 'destroyMessage'])
         ->scopeBindings();
+
+    Route::get('nexo/memory-suggestions', [MemorySuggestionController::class, 'index']);
+    Route::post('nexo/memory-suggestions/{suggestion}/accept', [MemorySuggestionController::class, 'accept']);
+    Route::delete('nexo/memory-suggestions/{suggestion}', [MemorySuggestionController::class, 'reject']);
 
     Route::delete('nexo/memories', [MemoryController::class, 'destroyAll']);
     Route::post('nexo/memories/{memory}/review', [MemoryController::class, 'review']);

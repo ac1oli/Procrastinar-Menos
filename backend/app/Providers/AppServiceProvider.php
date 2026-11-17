@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
             'conversation' => '[0-9a-fA-F-]{36}',
             'message' => '[0-9a-fA-F-]{36}',
             'memory' => '[0-9a-fA-F-]{36}',
+            'suggestion' => '[0-9a-fA-F-]{36}',
         ]);
 
         // Cada módulo dono de dados aplica a escolha da pessoa ao revogar (D7).
