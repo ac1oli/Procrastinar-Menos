@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
     Route::get('me', [AuthController::class, 'me']);
 
     Route::apiResource('devices', DeviceController::class);
+    Route::post('devices/{device}/token', [DeviceController::class, 'reissueToken'])->middleware('throttle:auth');
     Route::apiResource('routine-blocks', RoutineBlockController::class)
         ->parameters(['routine-blocks' => 'routineBlock']);
     Route::apiResource('goals', GoalController::class);
@@ -30,4 +31,5 @@ Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
 
 Route::prefix('device')->middleware(['auth:sanctum', 'actor:device', 'abilities:device:sync'])->group(function () {
     Route::get('me', [DeviceSessionController::class, 'me']);
+    Route::post('token/rotate', [DeviceSessionController::class, 'rotateToken']);
 });

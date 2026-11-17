@@ -4,6 +4,7 @@ namespace App\Modules\Devices\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Audit\AuditLogger;
+use App\Modules\Devices\Data\IssuedDeviceToken;
 use App\Modules\Devices\Http\Requests\StoreDeviceRequest;
 use App\Modules\Devices\Http\Requests\UpdateDeviceRequest;
 use App\Modules\Devices\Http\Resources\DeviceResource;
@@ -32,6 +33,7 @@ class DeviceController extends Controller
     {
         $user = $request->user();
 
+        /** @var array{0: Device, 1: IssuedDeviceToken} */
         [$device, $token] = DB::transaction(function () use ($request, $user) {
             $device = $user->devices()->create($request->validated());
 
@@ -40,10 +42,25 @@ class DeviceController extends Controller
 
         $this->audit->record('device.linked', $user, $device, ['platform' => $device->platform->value]);
 
-        return DeviceResource::make($device)
-            ->additional(['token' => $token])
+        return DeviceResource::make($device->refresh())
+            ->additional($token->toArray())
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
+    }
+
+    /**
+     * Reemite o token (ex.: agente reinstalado ou token expirado).
+     * O token anterior deixa de valer imediatamente.
+     */
+    public function reissueToken(Request $request, Device $device): DeviceResource
+    {
+        Gate::authorize('update', $device);
+        abort_if($device->isRevoked(), Response::HTTP_CONFLICT, 'Dispositivo revogado não pode receber novo token.');
+
+        $token = $device->issueToken();
+        $this->audit->record('device.token_reissued', $request->user(), $device);
+
+        return DeviceResource::make($device)->additional($token->toArray());
     }
 
     public function show(Device $device): DeviceResource

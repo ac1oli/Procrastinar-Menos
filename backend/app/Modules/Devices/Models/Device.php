@@ -2,6 +2,7 @@
 
 namespace App\Modules\Devices\Models;
 
+use App\Modules\Devices\Data\IssuedDeviceToken;
 use App\Modules\Devices\Enums\DevicePlatform;
 use App\Modules\Devices\Policies\DevicePolicy;
 use App\Modules\Shared\Concerns\BelongsToUser;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -39,6 +41,7 @@ class Device extends Model implements AuthenticatableContract
             'platform' => DevicePlatform::class,
             'monitoring_enabled' => 'boolean',
             'last_seen_at' => 'datetime',
+            'token_expires_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
     }
@@ -48,16 +51,39 @@ class Device extends Model implements AuthenticatableContract
         return $this->revoked_at !== null;
     }
 
-    /** Emite um novo token; o texto em claro só existe neste retorno. */
-    public function issueToken(): string
+    /**
+     * Emite um novo token e invalida os anteriores (um token ativo por dispositivo).
+     * Usado no vínculo, na reemissão pelo usuário e na renovação pelo agente.
+     * O texto em claro só existe no retorno.
+     */
+    public function issueToken(): IssuedDeviceToken
     {
-        return $this->createToken('device:'.$this->platform->value, self::TOKEN_ABILITIES)->plainTextToken;
+        $ttl = (int) config('devices.token_ttl_days');
+        $expiresAt = $ttl > 0 ? now()->addDays($ttl) : null;
+
+        return DB::transaction(function () use ($expiresAt) {
+            $this->tokens()->delete();
+            $token = $this->createToken('device:'.$this->platform->value, self::TOKEN_ABILITIES, $expiresAt);
+            $this->forceFill(['token_expires_at' => $expiresAt])->save();
+
+            return new IssuedDeviceToken($token->plainTextToken, $expiresAt);
+        });
+    }
+
+    /** O agente deve renovar o token (dentro da janela antes de expirar). */
+    public function tokenRenewalDue(): bool
+    {
+        $window = (int) config('devices.token_renewal_window_days');
+
+        return $this->token_expires_at !== null && $this->token_expires_at->lte(now()->addDays($window));
     }
 
     public function revoke(): void
     {
-        $this->tokens()->delete();
-        $this->forceFill(['revoked_at' => now(), 'monitoring_enabled' => false])->save();
+        DB::transaction(function () {
+            $this->tokens()->delete();
+            $this->forceFill(['revoked_at' => now(), 'monitoring_enabled' => false, 'token_expires_at' => null])->save();
+        });
     }
 
     public function getRememberTokenName(): ?string

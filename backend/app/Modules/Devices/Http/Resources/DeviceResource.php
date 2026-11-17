@@ -17,6 +17,7 @@ class DeviceResource extends JsonResource
             'platform' => $this->platform->value,
             'monitoring_enabled' => $this->monitoring_enabled,
             'last_seen_at' => $this->last_seen_at?->toIso8601String(),
+            'token_expires_at' => $this->token_expires_at?->toIso8601String(),
             'revoked_at' => $this->revoked_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
