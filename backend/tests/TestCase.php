@@ -3,9 +3,18 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Nenhum teste fala com o ai-service/Ollama reais sem querer.
+        Http::preventStrayRequests();
+    }
+
     /** Simula o dashboard (origem de primeira parte) para autenticação por sessão. */
     protected function fromDashboard(): static
     {

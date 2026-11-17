@@ -4,6 +4,7 @@ use App\Modules\Devices\Http\Controllers\DeviceController;
 use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
 use App\Modules\Identity\Http\Controllers\AuthController;
+use App\Modules\Nexo\Http\Controllers\NexoController;
 use App\Modules\Routine\Http\Controllers\RoutineBlockController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,9 @@ Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
     Route::apiResource('routine-blocks', RoutineBlockController::class)
         ->parameters(['routine-blocks' => 'routineBlock']);
     Route::apiResource('goals', GoalController::class);
+
+    Route::get('nexo/status', [NexoController::class, 'status']);
+    Route::post('nexo/messages', [NexoController::class, 'message'])->middleware('throttle:nexo');
 });
 
 Route::prefix('device')->middleware(['auth:sanctum', 'actor:device', 'abilities:device:sync'])->group(function () {

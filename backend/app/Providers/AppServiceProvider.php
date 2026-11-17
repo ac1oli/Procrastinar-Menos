@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Modules\Nexo\Contracts\NexoGateway;
+use App\Modules\Nexo\Gateway\HttpNexoGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,7 +17,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(NexoGateway::class, fn () => new HttpNexoGateway(
+            baseUrl: (string) config('nexo.ai_service.url'),
+            token: config('nexo.ai_service.token'),
+            connectTimeout: (float) config('nexo.ai_service.connect_timeout'),
+            replyTimeout: (float) config('nexo.ai_service.reply_timeout'),
+            embedTimeout: (float) config('nexo.ai_service.embed_timeout'),
+            healthTimeout: (float) config('nexo.ai_service.health_timeout'),
+            embeddingDimensions: (int) config('nexo.embedding_dimensions'),
+        ));
     }
 
     /**
@@ -41,5 +51,9 @@ class AppServiceProvider extends ServiceProvider
         // Login/registro: limite por e-mail + IP contra força bruta.
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(5)
             ->by(mb_strtolower((string) $request->input('email')).'|'.$request->ip()));
+
+        // Inferência é cara (GPU local): limite próprio por usuário.
+        RateLimiter::for('nexo', fn (Request $request) => Limit::perMinute((int) config('nexo.messages_per_minute'))
+            ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
     }
 }
