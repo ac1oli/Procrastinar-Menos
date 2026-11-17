@@ -28,6 +28,7 @@ class RowLevelSecurityTest extends TestCase
         'memory_embeddings',
         'message_memory_usages',
         'memory_suggestions',
+        'data_exports',
     ];
 
     public function test_application_connection_cannot_bypass_rls(): void
