@@ -5,7 +5,7 @@ significa escrever outro adaptador que implemente `ModelProvider`.
 """
 
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 Role = Literal["system", "user", "assistant"]
 
@@ -51,8 +51,15 @@ class ProviderInvalidResponse(ProviderError):
 
 class ModelProvider(Protocol):
     async def chat(
-        self, messages: list[ChatMessage], *, temperature: float, max_output_tokens: int
-    ) -> ChatResult: ...
+        self,
+        messages: list[ChatMessage],
+        *,
+        temperature: float,
+        max_output_tokens: int,
+        response_format: dict[str, Any] | None = None,
+    ) -> ChatResult:
+        """`response_format`: JSON Schema que a resposta deve seguir (saída estruturada)."""
+        ...
 
     async def embed(self, texts: list[str]) -> EmbeddingResult: ...
 

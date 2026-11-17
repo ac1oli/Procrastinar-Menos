@@ -10,7 +10,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app import nexo
+from app import embedding, nexo, suggest
 from app.config import Settings, get_settings
 from app.limits import ConcurrencyLimiter, ServiceBusy
 from app.providers.base import ModelProvider, ProviderError
@@ -22,6 +22,8 @@ from app.schemas import (
     HealthResponse,
     ReplyRequest,
     ReplyResponse,
+    SuggestRequest,
+    SuggestResponse,
 )
 
 logger = logging.getLogger("nexo.ai")
@@ -110,12 +112,22 @@ def create_app(settings: Settings | None = None, provider: ModelProvider | None 
     async def nexo_reply(
         body: ReplyRequest, provider: ModelProvider = Depends(get_provider)
     ) -> ReplyResponse:
+        profile = body.context.profile
         context = nexo.ReplyContext(
-            timezone=body.context.timezone, local_datetime=body.context.local_datetime
+            timezone=body.context.timezone,
+            local_datetime=body.context.local_datetime,
+            memories=[nexo.Memory(kind=m.kind, content=m.content) for m in body.context.memories],
+            profile=nexo.Profile(routine_today=profile.routine_today, goals=profile.goals)
+            if profile
+            else None,
         )
         async with limiter.slot():
             result = await nexo.reply(
-                provider, body.message, context, max_output_tokens=settings.chat_max_output_tokens
+                provider,
+                body.message,
+                context,
+                max_output_tokens=settings.chat_max_output_tokens,
+                history=[(turn.role, turn.content) for turn in body.history],
             )
         return ReplyResponse(reply=result.text, model=result.model, prompt_version=result.prompt_version)
 
@@ -126,7 +138,28 @@ def create_app(settings: Settings | None = None, provider: ModelProvider | None 
     )
     async def embed(body: EmbedRequest, provider: ModelProvider = Depends(get_provider)) -> EmbedResponse:
         async with limiter.slot():
-            result = await provider.embed(body.texts)
+            result = await embedding.embed(provider, body.texts, body.purpose)
         return EmbedResponse(model=result.model, dimensions=result.dimensions, vectors=result.vectors)
+
+    @app.post(
+        "/v1/nexo/suggest",
+        response_model=SuggestResponse,
+        dependencies=[Depends(require_service_token)],
+    )
+    async def nexo_suggest(
+        body: SuggestRequest, provider: ModelProvider = Depends(get_provider)
+    ) -> SuggestResponse:
+        by_role = {turn.role: turn.content for turn in body.exchange}
+        if set(by_role) != {"user", "assistant"}:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, detail="exchange precisa de user e assistant"
+            )
+        async with limiter.slot():
+            result = await suggest.suggest(
+                provider, by_role["user"], by_role["assistant"], max_suggestions=body.max_suggestions
+            )
+        return SuggestResponse(
+            suggestions=result.suggestions, model=result.model, prompt_version=result.prompt_version
+        )
 
     return app

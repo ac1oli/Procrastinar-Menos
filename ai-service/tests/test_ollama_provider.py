@@ -54,6 +54,16 @@ async def test_chat_strips_leaked_reasoning_and_ignores_thinking_field() -> None
     assert "segredo" not in result.content
 
 
+async def test_chat_forwards_structured_output_schema() -> None:
+    provider, seen = provider_with(lambda r: httpx.Response(200, json={"message": {"content": "{}"}}))
+
+    await provider.chat(MESSAGES, temperature=0.2, max_output_tokens=64, response_format={"type": "object"})
+    await provider.chat(MESSAGES, temperature=0.2, max_output_tokens=64)
+
+    assert json.loads(seen[0].content)["format"] == {"type": "object"}
+    assert "format" not in json.loads(seen[1].content)
+
+
 async def test_chat_with_only_reasoning_is_invalid() -> None:
     provider, _ = provider_with(
         lambda r: httpx.Response(200, json={"message": {"content": "<think>x</think>"}})

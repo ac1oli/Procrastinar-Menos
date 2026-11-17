@@ -25,9 +25,14 @@ class OllamaProvider:
         self._client = client
 
     async def chat(
-        self, messages: list[ChatMessage], *, temperature: float, max_output_tokens: int
+        self,
+        messages: list[ChatMessage],
+        *,
+        temperature: float,
+        max_output_tokens: int,
+        response_format: dict[str, Any] | None = None,
     ) -> ChatResult:
-        payload = {
+        payload: dict[str, Any] = {
             "model": self._settings.chat_model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "stream": False,
@@ -38,6 +43,8 @@ class OllamaProvider:
                 "num_predict": max_output_tokens,
             },
         }
+        if response_format is not None:
+            payload["format"] = response_format
         data = await self._post("/api/chat", payload, self._settings.chat_timeout)
 
         message = data.get("message")

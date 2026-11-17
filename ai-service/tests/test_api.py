@@ -113,7 +113,7 @@ def test_rejects_oversized_body(auth) -> None:
 
 def test_busy_when_concurrency_limit_is_exhausted(auth) -> None:
     class SlowProvider(FakeProvider):
-        async def chat(self, messages, *, temperature, max_output_tokens):
+        async def chat(self, messages, *, temperature, max_output_tokens, response_format=None):
             await asyncio.sleep(0.5)
             return await super().chat(messages, temperature=temperature, max_output_tokens=max_output_tokens)
 
