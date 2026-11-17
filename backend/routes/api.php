@@ -21,6 +21,7 @@ Route::prefix('auth')->middleware('throttle:auth')->group(function () {
 Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+    Route::delete('me', [AuthController::class, 'destroy'])->middleware('throttle:auth');
 
     Route::apiResource('devices', DeviceController::class);
     Route::post('devices/{device}/token', [DeviceController::class, 'reissueToken'])->middleware('throttle:auth');

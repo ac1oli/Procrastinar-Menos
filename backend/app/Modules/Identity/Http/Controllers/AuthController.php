@@ -5,9 +5,12 @@ namespace App\Modules\Identity\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Audit\AuditLogger;
+use App\Modules\Identity\Actions\DeleteAccount;
+use App\Modules\Identity\Http\Requests\DeleteAccountRequest;
 use App\Modules\Identity\Http\Requests\LoginRequest;
 use App\Modules\Identity\Http\Requests\RegisterRequest;
 use App\Modules\Identity\Http\Resources\UserResource;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -58,14 +61,49 @@ class AuthController extends Controller
     {
         $this->audit->record('auth.logout', $request->user());
 
+        $this->endSession($request);
+
+        return response()->noContent();
+    }
+
+    /** Exclui a conta e encerra a sessão. Irreversível. */
+    public function destroy(DeleteAccountRequest $request, DeleteAccount $deleteAccount): Response
+    {
+        $user = $request->user();
+
+        // Logout antes da exclusão: o logout pode salvar o remember_token no
+        // usuário, o que depois do delete reinseriria o registro.
+        $this->endSession($request);
+
+        $deleteAccount($user);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Encerra a sessão por completo.
+     *
+     * O driver de sessão em banco grava o user_id lendo Guard::class (singleton
+     * `auth.driver` → guard padrão), que nas rotas auth:sanctum é o guard do
+     * Sanctum com o usuário em cache. Sem limpar esse cache, a sessão nova
+     * seria gravada com o user_id de quem saiu — ou de quem excluiu a conta.
+     */
+    private function endSession(Request $request): void
+    {
         Auth::guard('web')->logout();
+
+        // Instância que o driver de sessão vai consultar (resolvida agora, se ainda não foi).
+        $sessionGuard = app(Guard::class);
+        if (method_exists($sessionGuard, 'forgetUser')) {
+            $sessionGuard->forgetUser();
+        }
+        // E qualquer outra instância de guard em cache no AuthManager.
+        Auth::forgetGuards();
 
         if ($request->hasSession()) {
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
-
-        return response()->noContent();
     }
 
     public function me(Request $request): JsonResponse
