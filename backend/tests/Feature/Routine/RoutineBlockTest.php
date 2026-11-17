@@ -4,8 +4,8 @@ namespace Tests\Feature\Routine;
 
 use App\Models\User;
 use App\Modules\Routine\Models\RoutineBlock;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class RoutineBlockTest extends TestCase

@@ -47,7 +47,9 @@ Tailwind + shadcn/ui · C#/.NET (agente Windows) · Kotlin + Compose
 ```powershell
 pwsh infrastructure/scripts/check-env.ps1 [-TestModel qwen3:8b]
 docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d --build
-docker exec pm-backend php artisan test                 # backend (sem IA real)
+pwsh infrastructure/scripts/provision-db-roles.ps1      # papel pm_runtime (1x por cluster)
+pwsh infrastructure/scripts/artisan-owner.ps1 migrate    # migrations (dono das tabelas)
+pwsh infrastructure/scripts/artisan-owner.ps1 test       # backend (sem IA real; testes como pm_runtime)
 docker exec pm-ai-service python -m pytest -q           # ai-service (mocks)
 docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integration
 ollama list

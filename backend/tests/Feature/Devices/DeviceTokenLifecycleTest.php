@@ -5,8 +5,8 @@ namespace Tests\Feature\Devices;
 use App\Models\User;
 use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Devices\Models\Device;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class DeviceTokenLifecycleTest extends TestCase

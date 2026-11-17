@@ -4,7 +4,7 @@ namespace Tests\Feature\Audit;
 
 use App\Models\User;
 use App\Modules\Audit\Models\AuditLog;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class AuditRetentionTest extends TestCase

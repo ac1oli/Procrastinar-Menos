@@ -68,9 +68,15 @@ docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/do
 docker exec pm-backend composer install
 Copy-Item backend/.env.example backend/.env   # se ainda não existir
 docker exec pm-backend php artisan key:generate
-docker exec pm-backend php artisan migrate
-docker exec pm-backend php artisan test
+pwsh infrastructure/scripts/provision-db-roles.ps1     # cria o papel de execução pm_runtime
+pwsh infrastructure/scripts/artisan-owner.ps1 migrate   # migrations como dono das tabelas
+pwsh infrastructure/scripts/artisan-owner.ps1 test      # suíte completa
 ```
+
+A aplicação conecta com `pm_runtime` (sem superusuário, sem BYPASSRLS, sem ser dona das
+tabelas), para que a Row-Level Security das tabelas do NEXO valha (ADR-0008, D8). O dono
+(`pm_app`) só é usado por migrations, pela recriação do banco de testes e por backups; as
+credenciais dele entram apenas no processo iniciado por `artisan-owner.ps1`.
 
 API em `http://127.0.0.1:8000`. Detalhes, rotas e convenções em
 [backend/README.md](backend/README.md).

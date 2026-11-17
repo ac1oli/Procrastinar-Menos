@@ -41,12 +41,14 @@ services:
     environment:
       # Credenciais vêm do .env desta pasta (fonte única); o Laravel não
       # sobrescreve variáveis já definidas no ambiente do processo.
+      # A aplicação usa o papel de execução, sujeito à RLS (ADR-0008, D8). O dono
+      # das tabelas só entra via infrastructure/scripts/artisan-owner.ps1.
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
       DB_DATABASE: ${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${POSTGRES_RUNTIME_USER:?defina POSTGRES_RUNTIME_USER no .env}
+      DB_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:?defina POSTGRES_RUNTIME_PASSWORD no .env}
       NEXO_AI_SERVICE_URL: http://ai-service:8100
       NEXO_AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
     ports:
@@ -68,8 +70,8 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_DATABASE: ${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${POSTGRES_RUNTIME_USER}
+      DB_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD}
     command: ["php", "artisan", "schedule:work"]
     depends_on:
       postgres:

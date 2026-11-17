@@ -15,8 +15,8 @@ Da raiz do repositório (o container `pm-backend` monta esta pasta em `/app`):
 $dc = 'docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env'
 Invoke-Expression "$dc up -d --build"              # postgres + backend
 docker exec pm-backend composer install            # após clonar
-docker exec pm-backend php artisan migrate
-docker exec pm-backend php artisan test            # suíte completa (banco *_test)
+pwsh infrastructure/scripts/artisan-owner.ps1 migrate   # como dono das tabelas
+pwsh infrastructure/scripts/artisan-owner.ps1 test      # suíte completa (banco *_test)
 docker exec pm-backend ./vendor/bin/pint           # padrão de código
 ```
 

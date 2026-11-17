@@ -4,8 +4,8 @@ namespace Tests\Feature\Goals;
 
 use App\Models\User;
 use App\Modules\Goals\Models\Goal;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class GoalTest extends TestCase

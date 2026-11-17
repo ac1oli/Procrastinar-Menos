@@ -4,8 +4,8 @@ namespace Tests\Feature\Identity;
 
 use App\Models\User;
 use App\Modules\Audit\Models\AuditLog;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class AuthTest extends TestCase

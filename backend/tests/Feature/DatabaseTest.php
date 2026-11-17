@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class DatabaseTest extends TestCase

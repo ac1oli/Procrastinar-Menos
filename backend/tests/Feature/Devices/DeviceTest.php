@@ -5,9 +5,9 @@ namespace Tests\Feature\Devices;
 use App\Models\User;
 use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Devices\Models\Device;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class DeviceTest extends TestCase

@@ -32,5 +32,14 @@ Complementa o [CLAUDE.md da raiz](../CLAUDE.md). Leia-o primeiro.
 ## Antes de commitar
 ```powershell
 docker exec pm-backend ./vendor/bin/pint --test
-docker exec pm-backend php artisan test
+pwsh ../infrastructure/scripts/artisan-owner.ps1 test
 ```
+
+## Banco e RLS (ADR-0008, D8)
+- A aplicação usa o papel `pm_runtime`, sujeito à RLS. Migrations e testes passam por
+  `infrastructure/scripts/artisan-owner.ps1` (dono das tabelas só nesse processo).
+- Tabela nova com dado pessoal do NEXO: `RowLevelSecurity::enable('tabela')` na migration
+  e inclusão em `RowLevelSecurityTest::PROTECTED_TABLES`.
+- Rotas de usuário passam por `db.user`; jobs e comandos usam `DatabaseUserScope::run($user, …)`,
+  um usuário por vez. Sem escopo, as tabelas protegidas aparecem vazias.
+- Testes usam `Tests\Concerns\RefreshDatabase` e `asDatabaseUser()` para consultas diretas.

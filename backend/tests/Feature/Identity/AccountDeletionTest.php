@@ -7,9 +7,9 @@ use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Devices\Models\Device;
 use App\Modules\Goals\Models\Goal;
 use App\Modules\Routine\Models\RoutineBlock;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Concerns\RefreshDatabase;
 use Tests\TestCase;
 
 class AccountDeletionTest extends TestCase

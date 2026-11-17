@@ -6,8 +6,8 @@ use App\Models\User;
 use App\Modules\Devices\Models\Device;
 use App\Modules\Nexo\Contracts\NexoGateway;
 use App\Modules\Nexo\Exceptions\AiFailure;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RefreshDatabase;
 use Tests\Fakes\FakeNexoGateway;
 use Tests\TestCase;
 

@@ -99,6 +99,26 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+        | Dono das tabelas, usado só por migrations e pela recriação do banco de
+        | testes. As credenciais só existem no processo iniciado por
+        | infrastructure/scripts/artisan-owner.ps1 (ADR-0008, D8).
+        */
+        'pgsql_owner' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_OWNER_USERNAME'),
+            'password' => env('DB_OWNER_PASSWORD'),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
@@ -126,6 +146,12 @@ return [
     | the migrations on disk haven't actually been run on the database.
     |
     */
+
+    /*
+    | Papel de execução da aplicação: recebe só SELECT/INSERT/UPDATE/DELETE e é
+    | sujeito à Row-Level Security das tabelas do NEXO.
+    */
+    'runtime_role' => env('DB_RUNTIME_ROLE', env('DB_USERNAME')),
 
     'migrations' => [
         'table' => 'migrations',
