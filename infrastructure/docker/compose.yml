@@ -1,0 +1,33 @@
+# Serviços de infraestrutura local do Procrastinar Menos.
+#
+# Uso (a partir da raiz do repositório):
+#   docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d
+#
+# Segurança: todas as portas são publicadas apenas em 127.0.0.1.
+# Nada aqui deve ficar acessível pela rede local ou pela internet sem
+# uma decisão explícita documentada em docs/decisions/.
+
+name: procrastinar-menos
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg18
+    container_name: pm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pm_pgdata:/var/lib/postgresql
+      - ../database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pm_pgdata:
