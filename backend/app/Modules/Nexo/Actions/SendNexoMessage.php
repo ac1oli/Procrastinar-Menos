@@ -7,11 +7,14 @@ use App\Modules\Consent\ConsentService;
 use App\Modules\Consent\Enums\ConsentScope;
 use App\Modules\Conversations\ConversationRecorder;
 use App\Modules\Conversations\Models\Conversation;
+use App\Modules\Memory\Models\Memory;
+use App\Modules\Memory\Retrieval\RetrievedMemory;
+use App\Modules\Nexo\Context\ContextAssembler;
 use App\Modules\Nexo\Contracts\NexoGateway;
 use App\Modules\Nexo\Data\NexoMessageResult;
-use App\Modules\Nexo\Data\ReplyContext;
 use App\Modules\Nexo\Data\Turn;
 use App\Modules\Nexo\Exceptions\AiUnavailableException;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -27,6 +30,7 @@ final class SendNexoMessage
         private readonly NexoGateway $gateway,
         private readonly ConsentService $consents,
         private readonly ConversationRecorder $recorder,
+        private readonly ContextAssembler $assembler,
     ) {}
 
     /**
@@ -57,9 +61,12 @@ final class SendNexoMessage
             default => ConversationRecorder::withinBudget($clientHistory),
         };
 
-        $reply = $this->gateway->reply($message, ReplyContext::forUser($user), $history);
+        [$context, $memories] = $this->assembler->assemble($user, $message);
+
+        $reply = $this->gateway->reply($message, $context, $history);
 
         $stored = $persist ? $this->recorder->recordExchange($user, $conversation, $message, $reply) : null;
+        $this->recordUsage($user, $memories, $stored['assistant']->id ?? null);
 
         return new NexoMessageResult(
             reply: $reply,
@@ -67,6 +74,34 @@ final class SendNexoMessage
             conversation: $stored['conversation'] ?? null,
             userMessage: $stored['user'] ?? null,
             assistantMessage: $stored['assistant'] ?? null,
+            memoriesUsed: array_map(fn (RetrievedMemory $m) => [
+                'id' => $m->memory->id,
+                'kind' => $m->memory->kind->value,
+                'content' => $m->memory->content,
+            ], $memories),
         );
+    }
+
+    /** @param list<RetrievedMemory> $memories */
+    private function recordUsage(User $user, array $memories, ?string $assistantMessageId): void
+    {
+        if ($memories === []) {
+            return;
+        }
+
+        $ids = array_map(fn (RetrievedMemory $m) => $m->memory->id, $memories);
+
+        DB::transaction(function () use ($user, $memories, $ids, $assistantMessageId) {
+            Memory::ownedBy($user)->whereKey($ids)->update(['last_used_at' => now()]);
+
+            if ($assistantMessageId !== null) {
+                DB::table('message_memory_usages')->insert(array_map(fn (RetrievedMemory $m) => [
+                    'message_id' => $assistantMessageId,
+                    'memory_id' => $m->memory->id,
+                    'user_id' => $user->getKey(),
+                    'score' => $m->score,
+                ], $memories));
+            }
+        });
     }
 }
