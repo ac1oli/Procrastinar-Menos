@@ -1,0 +1,52 @@
+[project]
+name = "nexo-ai-service"
+version = "0.1.0"
+description = "Serviço de IA do NEXO (Procrastinar Menos): prompts, provedores de modelo e embeddings."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.163,<1.0",
+    "uvicorn[standard]>=0.38",
+    "pydantic>=2.14,<3.0",
+    "pydantic-settings>=2.11",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4",
+    "pytest-asyncio>=1.2",
+    "ruff>=0.14",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["prompts/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: requer Ollama real (RUN_OLLAMA_TESTS=1)",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S"]
+ignore = ["S101"]  # assert é usado nos testes
+
+[tool.ruff.lint.flake8-bugbear]
+# Padrão idiomático do FastAPI para injeção de dependências.
+extend-immutable-calls = ["fastapi.Depends"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]  # tokens fictícios nos testes
