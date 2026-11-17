@@ -19,9 +19,8 @@ da raiz do repositório, em PowerShell (Windows).
 PHP e Composer **não** são instalados no Windows: rodarão em container
 (ver [ADR-0002](docs/decisions/0002-ambiente-docker-e-ollama-nativo.md)).
 
-> **Python 3.14:** algumas bibliotecas de IA podem ainda não ter wheels
-> para 3.14. O ai-service usará ambiente virtual próprio; se houver
-> incompatibilidade, será usado Python 3.12 via container (decisão na FASE 3).
+> **Python 3.14:** validado na FASE 2 com fastapi, pydantic, uvicorn, httpx,
+> psycopg e pgvector. O ai-service usará um ambiente virtual próprio (`ai-service/.venv`).
 
 ## 2. Verificar o ambiente
 
@@ -38,6 +37,10 @@ Copy-Item infrastructure/docker/.env.example infrastructure/docker/.env
 docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d
 docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env ps
 ```
+
+O banco fica em `127.0.0.1:5433`. A porta 5432 **não** é usada porque,
+nesta máquina, pertence a um PostgreSQL 16 nativo de outro projeto.
+Conexão manual: `docker exec -it pm-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'`.
 
 As extensões `vector`, `pgcrypto` e `citext` são criadas na primeira
 inicialização do volume ([init/01-extensions.sql](infrastructure/database/init/01-extensions.sql)).

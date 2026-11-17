@@ -56,3 +56,6 @@ ollama list
 - RX 5700 XT não é suportada pelo ROCm; o Ollama usa Vulkan. O aviso
   "AMD driver is too old" no log é do ROCm e pode ser ignorado.
 - Docker Desktop não repassa GPU AMD para containers — Ollama fica nativo.
+- Porta 5432 pertence a um PostgreSQL 16 nativo de **outro projeto** — não
+  tocar. O banco deste projeto é o container `pm-postgres` em `127.0.0.1:5433`.
+- A imagem `composer:2` não tem `pdo_pgsql`/`intl`/`bcmath`; o backend usa Dockerfile próprio.

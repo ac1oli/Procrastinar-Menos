@@ -22,8 +22,8 @@ aleatórios, e três dias sem estudar podem ser cansaço, não falta de discipli
 
 ## Estado atual
 
-🚧 **FASE 1 concluída, FASE 2 em andamento** — ambiente e fundação
-documental. **Ainda não há funcionalidades de produto implementadas.**
+🚧 **FASES 1 e 2 concluídas** — ambiente validado (PostgreSQL 18 +
+pgvector, Ollama com `qwen3:8b` na GPU) e fundação documental. Próxima: FASE 3. **Ainda não há funcionalidades de produto implementadas.**
 Veja o [ROADMAP.md](ROADMAP.md).
 
 ## Tecnologias
