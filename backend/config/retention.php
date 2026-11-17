@@ -30,6 +30,27 @@ return [
             'device.monitoring_disabled',
             'account.deleted',
         ],
+
+        /*
+        | Ações excluídas junto com a conta. Todo tipo de evento precisa estar em
+        | uma das duas listas (verificado por Tests\Feature\Audit\AuditClassificationTest).
+        | Eventos do NEXO nunca são retidos e nunca carregam conteúdo (ADR-0008).
+        */
+        'not_retained_on_account_deletion' => [
+            'auth.logout',
+            'nexo.consent.granted',
+            'nexo.consent.revoked',
+            'nexo.consent.declined',
+            'nexo.history.cleared',
+            'nexo.conversation.deleted',
+            'nexo.memory.created',
+            'nexo.memory.updated',
+            'nexo.memory.deleted',
+            'nexo.memory.cleared',
+            'nexo.suggestion.accepted',
+            'nexo.export.requested',
+            'nexo.export.downloaded',
+        ],
     ],
 
 ];

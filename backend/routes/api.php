@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Consent\Http\Controllers\ConsentController;
 use App\Modules\Devices\Http\Controllers\DeviceController;
 use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 | Rotas de usuário: sessão do dashboard (Sanctum SPA).
 | Rotas de dispositivo: token Sanctum emitido para o Device.
 | O middleware actor:* impede que uma credencial acesse rotas da outra.
+| db.user restringe a conexão às linhas do usuário nas tabelas com RLS (ADR-0008).
 */
 
 Route::prefix('auth')->middleware('throttle:auth')->group(function () {
@@ -19,7 +21,7 @@ Route::prefix('auth')->middleware('throttle:auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
 });
 
-Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
+Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
     Route::delete('me', [AuthController::class, 'destroy'])->middleware('throttle:auth');
@@ -32,6 +34,11 @@ Route::middleware(['auth:sanctum', 'actor:user'])->group(function () {
 
     Route::get('nexo/status', [NexoController::class, 'status']);
     Route::post('nexo/messages', [NexoController::class, 'message'])->middleware('throttle:nexo');
+
+    Route::get('nexo/consents', [ConsentController::class, 'index']);
+    Route::get('nexo/consents/history', [ConsentController::class, 'history']);
+    Route::put('nexo/consents/{scope}', [ConsentController::class, 'update'])
+        ->where('scope', 'nexo\.[a-z.]+');
 });
 
 Route::prefix('device')->middleware(['auth:sanctum', 'actor:device', 'abilities:device:sync'])->group(function () {
