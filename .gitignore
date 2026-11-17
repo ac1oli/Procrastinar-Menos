@@ -1,0 +1,93 @@
+# ==== Segredos e ambiente ====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+secrets/
+credentials*.json
+
+# ==== Dados locais / dumps / logs ====
+*.log
+logs/
+*.sql.gz
+*.dump
+*.backup
+dumps/
+infrastructure/docker/data/
+infrastructure/docker/volumes/
+
+# ==== Sistema operacional / editores ====
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ==== Claude Code (configuração local do usuário) ====
+.claude/settings.local.json
+
+# ==== PHP / Laravel ====
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+backend/public/hot
+backend/public/storage
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+
+# ==== Python ====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==== Node / TypeScript ====
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# ==== .NET ====
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# ==== Android / Kotlin / Gradle ====
+.gradle/
+local.properties
+mobile/**/build/
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ==== Modelos de IA (nunca versionar pesos) ====
+*.gguf
+*.safetensors
+# Atenção: não use "models/" genérico — no Windows o Git é case-insensitive
+# e isso ignoraria backend/app/Models do Laravel.
+*.bin
+/ai-service/model-cache/
