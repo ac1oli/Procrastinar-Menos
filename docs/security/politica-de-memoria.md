@@ -45,8 +45,8 @@ terceiros. A IA roda localmente.
 ## 3. Como uma memória nasce
 
 1. **A pessoa cria:** escreve a memória diretamente.
-2. **O NEXO sugere, a pessoa confirma:** com sugestões ligadas, o NEXO pode propor algo que
-   percebeu na conversa.
+2. **O NEXO sugere, a pessoa confirma:** com sugestões ligadas (exigem memória e histórico
+   ligados), o NEXO pode propor algo que percebeu numa conversa guardada.
    - A sugestão fica pendente até a pessoa aceitar, editar ou recusar.
    - Pendências expiram em 14 dias **(D10)**.
    - Recusar apaga a sugestão.
@@ -78,6 +78,12 @@ Regras de confiança:
 | Localização precisa | Não guardada como memória nesta fase |
 
 Se houver dúvida sobre a categoria de uma sugestão, ela é tratada como sensível e descartada.
+
+**A detecção automática não é infalível.** Ela usa padrões (documentos, cartões, contatos,
+credenciais) e palavras-chave (categorias sensíveis). Formatos incomuns, sinônimos ou gírias
+podem escapar, e textos comuns podem ser mascarados por engano. Por isso ela é uma camada
+de proteção, não uma garantia: evite escrever dados que não queira guardar e use a conversa
+privada quando preferir.
 A pessoa pode ativar a **conversa privada**, que não grava nada da conversa, nem sugestões
 **(D5)**.
 

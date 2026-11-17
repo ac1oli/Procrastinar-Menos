@@ -18,7 +18,17 @@ define as regras; cada componente deve segui-las desde o primeiro commit.
 - `POSTGRES_PASSWORD`: com o volume já criado, alterar só o `.env` **não** muda a
   senha. É preciso aplicar `ALTER ROLE … WITH PASSWORD` via stdin dentro do container,
   atualizar o `.env` e recriar os containers. Rotacionada em 2026-11-17 (48 caracteres).
-- `AI_SERVICE_TOKEN`: trocar no `.env` e recriar `backend`, `scheduler` e `ai-service`.
+- `AI_SERVICE_TOKEN`: trocar no `.env` e recriar `backend`, `scheduler`, `queue` e `ai-service`.
+- `POSTGRES_RUNTIME_PASSWORD`: trocar no `.env`, rodar `provision-db-roles.ps1` e recriar
+  `backend`, `scheduler` e `queue`.
+
+### Papéis do banco (ADR-0008, D8)
+- A aplicação (backend, agendador, fila) conecta como `pm_runtime`: sem superusuário, sem
+  `BYPASSRLS`, sem ser dona das tabelas, só DML. Assim a Row-Level Security vale de fato.
+- `pm_app` (dono, superusuário do container) fica restrito a migrations, recriação do banco de
+  testes e backups. As credenciais dele só entram no processo de
+  `infrastructure/scripts/artisan-owner.ps1` e nunca no ambiente permanente dos containers.
+- `check-env.ps1` falha se o papel da aplicação puder contornar a RLS.
 
 ## 2. Autenticação e autorização
 
@@ -30,6 +40,11 @@ define as regras; cada componente deve segui-las desde o primeiro commit.
   comparado em tempo constante ([ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md)).
 - Toda consulta a dados pessoais passa por policy/escopo de `user_id` no
   backend. O frontend nunca é fonte de autorização.
+- Tabelas do NEXO (consentimentos, histórico, memórias, embeddings, sugestões, exportações)
+  têm **RLS forçada**: a conexão só enxerga as linhas do usuário definido por requisição
+  (`db.user`) ou por job (`DatabaseUserScope`). FKs compostas `(id, user_id)` impedem, no
+  banco, ligar um registro de uma conta a outra. Testes de isolamento:
+  `RowLevelSecurityTest` e os testes de cada módulo.
 - Rate limiting em login, APIs de dispositivos e endpoints do NEXO.
 - Auditoria de operações relevantes: login, vinculação/revogação de
   dispositivo, mudanças de consentimento, exportação/exclusão de dados,
@@ -54,7 +69,10 @@ em cada dispositivo.
 ## 4. Direitos do usuário (LGPD)
 
 Retenção e exclusão: ver [docs/security/retencao-de-dados.md](docs/security/retencao-de-dados.md)
-(exclusão de conta já implementada em `DELETE /api/me`).
+(exclusão de conta já implementada em `DELETE /api/me`). Memória do NEXO:
+[docs/security/politica-de-memoria.md](docs/security/politica-de-memoria.md) — consentimentos
+independentes, consulta/edição/exclusão de memórias e conversas e exportação
+(`POST /api/me/exports`) já implementados.
 
 A aplicação deverá oferecer:
 - Painel "Meus dados": o que é coletado, por quê, onde fica, por quanto tempo.
@@ -80,13 +98,20 @@ consentimento e anonimização adequados.
   parâmetros sensíveis, tokens ou dados pessoais desnecessários.
 - Prompts e respostas do NEXO não vão para logs técnicos (backend e ai-service
   registram apenas o motivo de falhas).
+- `QueryException` é registrada só com SQLSTATE e o SQL com placeholders, sem os valores
+  (que poderiam conter conversas ou memórias). Jobs levam só identificadores na fila.
+- Antes de gravar, o histórico passa pelo mascaramento de identificadores (CPF, CNPJ, RG,
+  cartões, e-mails, telefones, senhas e tokens). Não é infalível; a política diz isso.
 - O raciocínio interno do modelo (`<think>`) é removido no ai-service e de novo no
   backend; nunca chega ao usuário.
 
 ## 7. Backups
 
-- Backup do PostgreSQL via `pg_dump` em diretório fora do repositório,
-  criptografado quando sair da máquina. Estratégia detalhada na FASE 3.
+- Scripts prontos e testados: `pg_dump` cifrado com AES-256-GCM, só em dispositivo físico
+  separado, sem nuvem nesta fase, com reaplicação de exclusões na restauração. Ver
+  [docs/security/backup-e-restauracao.md](docs/security/backup-e-restauracao.md).
+- Pendente: dispositivo separado e agendamento. BitLocker está desligado no `C:` (verificado
+  em 2026-11-17); habilitar depende de autorização.
 
 ## 8. Reporte de vulnerabilidades
 

@@ -39,7 +39,13 @@
 ```
 
 Containers (Docker Compose): `pm-postgres`, `pm-backend`, `pm-scheduler` (tarefas
-agendadas) e `pm-ai-service`. O Ollama roda nativo no Windows.
+agendadas), `pm-queue` (fila: embeddings, sugestões, exportações) e `pm-ai-service`. O Ollama
+roda nativo no Windows.
+
+Banco: a aplicação conecta como `pm_runtime` (sem superusuário/BYPASSRLS, sem ser dona das
+tabelas); as tabelas do NEXO têm Row-Level Security forçada por `user_id`. Memória do NEXO:
+[ADR-0008](docs/decisions/0008-memoria-do-nexo.md) e
+[arquitetura da memória](docs/architecture/memoria-do-nexo.md).
 
 ## 2. Componentes e responsabilidades
 

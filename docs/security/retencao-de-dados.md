@@ -22,7 +22,12 @@
 | Dispositivos e consentimentos | Mantido | **Excluído** (cascata) |
 | Tokens de usuário e de dispositivos | Até expirar/revogar; expirados são apagados após 24 h | **Excluídos** |
 | Sessões | Até o logout/expiração | **Excluídas** |
-| Conversas e memórias do NEXO | **Não armazenadas** ainda; regras propostas na [política de memória](politica-de-memoria.md) (ADR-0008, aceita; implementação em andamento) | — |
+| Consentimentos do NEXO e histórico de decisões | Mantidos (prova da autorização) | **Excluídos** (cascata) |
+| Histórico de conversas (mascarado) | 30/90/365 dias ou até excluir (padrão 90) | **Excluído** (cascata) |
+| Memórias de longo prazo + embeddings | Até a pessoa excluir; revisão após 180 dias sem uso | **Excluídos** (cascata) |
+| Sugestões de memória pendentes | 14 dias | **Excluídas** (cascata) |
+| Arquivos de exportação | 24 h ou primeiro download | **Excluídos** |
+| Diário de exclusões (só UUIDs) | 35 dias (janela dos backups) | Mantido 35 dias, para reaplicar a exclusão numa restauração |
 | Auditoria: IP | 90 dias, depois apagado | **Apagado** |
 | Auditoria: evento | 365 dias, depois excluído | Ver seção 3 |
 
@@ -53,12 +58,16 @@ feita.
   roda em transação única. A sessão é encerrada antes, para que nenhuma sessão nova seja
   gravada com o `user_id` excluído (há teste de regressão).
 - **Rotina diária:** às 03:00 `audit:apply-retention` (IPs > 90 dias, eventos > 365 dias);
-  às 03:10 `sanctum:prune-expired --hours=24`. Executadas pelo container `pm-scheduler`.
+  às 03:10 `sanctum:prune-expired --hours=24`; às 03:20 `nexo:apply-retention` (histórico,
+  sugestões, exportações, diário de exclusões e revisão de memórias). Executadas pelo container
+  `pm-scheduler`, um usuário por vez sob RLS.
 
 ## 5. Pendências conhecidas
 
-- Exportação dos dados (portabilidade, art. 18, V) — FASE 4, painel "Meus dados".
-- Backups: quando existirem, precisarão de prazo próprio, já que dados excluídos podem
-  persistir em backups até a rotação deles.
+- Exportação: os dados do NEXO já são exportáveis (`POST /api/me/exports`); perfil, rotinas,
+  objetivos e dispositivos entram no painel "Meus dados" (FASE 4).
+- Backups: dados excluídos persistem nos arquivos de backup até a rotação (no máximo ~35 dias);
+  restaurações reaplicam as exclusões ([backup-e-restauracao.md](backup-e-restauracao.md)).
+  Os backups agendados dependem de um dispositivo físico separado.
 - Os prazos (90 e 365 dias) são uma escolha técnica conservadora e devem ser revisados
   juridicamente antes do uso comercial (FASE 6).

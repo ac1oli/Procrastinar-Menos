@@ -16,13 +16,13 @@ inválidas, sem que a IA derrube os recursos básicos.
 | Camada | Responsável | Não faz |
 |---|---|---|
 | Regras de negócio | Backend (módulos de domínio) | Montar prompts |
-| Contexto autorizado | Backend (`ReplyContext`) | — |
-| Memória | Backend/PostgreSQL (ainda não implementada) | — |
-| Inteligência (persona, prompts) | ai-service (`app/nexo.py`, `prompts/`) | Guardar estado; autorizar |
+| Contexto autorizado | Backend (`ContextAssembler`, `MemoryRetriever`, `ProfileSnapshot`) | — |
+| Memória | Backend/PostgreSQL ([ADR-0008](0008-memoria-do-nexo.md)) | — |
+| Inteligência (persona, prompts) | ai-service (`app/nexo.py`, `app/suggest.py`, `prompts/`) | Guardar estado; autorizar |
 | Execução do modelo | `ModelProvider` → `OllamaProvider` | Conhecer o domínio |
 
-Hoje o contexto enviado contém apenas o fuso e o horário local. Nome, e-mail e dados
-de rotina ou objetivos só serão enviados com regras de consentimento (FASE 4).
+O contexto enviado traz sempre fuso e horário local. Memórias, rotina e objetivos só
+entram com o consentimento de cada fonte (ADR-0008). Nome e e-mail nunca são enviados.
 
 ### Implantação
 - ai-service em **container** (`pm-ai-service`), sem GPU. Ele alcança o Ollama nativo via
@@ -33,9 +33,22 @@ de rotina ou objetivos só serão enviados com regras de consentimento (FASE 4).
 - O backend **não** depende do ai-service no compose: sobe e funciona sem ele.
 
 ### Contrato HTTP (v1)
-- `POST /v1/nexo/reply` `{message ≤ 4000, context{timezone, local_datetime}}` →
-  `{reply, model, prompt_version}`.
-- `POST /v1/embed` `{texts[1..32], cada ≤ 8000}` → `{model, dimensions, vectors}`.
+- `POST /v1/nexo/reply` → `{reply, model, prompt_version}`. Entrada:
+  - `message` (≤ 4000);
+  - `context{timezone, local_datetime, memories[≤12]{kind, content ≤ 500}, profile?{routine_today[≤12], goals[≤5]}}`;
+  - `history[≤12]{role: user|assistant, content}`.
+
+  Memórias e perfil entram no prompt de sistema como **dados delimitados**, uma linha por item,
+  com `<`/`>` neutralizados (uma memória não consegue fechar o bloco nem virar instrução).
+- `POST /v1/embed` `{texts[1..32], cada ≤ 8000, purpose: document|query}` →
+  `{model, dimensions, vectors}`. A instrução do qwen3-embedding para consultas fica no
+  ai-service.
+- `POST /v1/nexo/suggest` `{exchange[2]{role, content}, max_suggestions 1..3}` →
+  `{suggestions[]{kind, content, rationale, sensitivity: normal|sensitive}, model, prompt_version}`.
+  Usa saída estruturada (`format` JSON Schema do Ollama). Não grava nada; o backend valida e
+  descarta (ADR-0008 §2.3).
+- Histórico do contrato: v1 inicial (2026-11-17); contexto autorizado, `purpose` e
+  `/v1/nexo/suggest` (2026-11-18, ADR-0008).
 - `GET /health` (público, sem detalhes) → `{status, provider: up|down}`.
 - Erros: `{error, message}` com `ai_unavailable`/`ai_busy` (503), `ai_timeout` (504),
   `ai_invalid_response` (502). Campos extras são rejeitados (`extra="forbid"`).

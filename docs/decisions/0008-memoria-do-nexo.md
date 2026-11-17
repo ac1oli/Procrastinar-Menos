@@ -267,3 +267,30 @@ Todas as recomendações foram aprovadas (ajustes na seção 7). Consequências 
   nesta fase, com restauração, recuperação e reaplicação de exclusões documentadas.
 - **Geral:** nenhuma alteração destrutiva no banco principal sem autorização; testes sem
   dados pessoais reais.
+
+## 8. Implementação (2026-11-18) e diferenças em relação ao plano
+
+Implementado na branch `feat/nexo-memoria` nas seis etapas do §5. Diferenças:
+
+- **Papel de execução do banco.** A aplicação conectava como `pm_app`, superusuário com
+  `BYPASSRLS`, o que anularia a RLS. Foi criado `pm_runtime` (sem superusuário, sem
+  `BYPASSRLS`, não dono das tabelas, só DML). Migrations e testes usam o dono só via
+  `artisan-owner.ps1`. Tarefas de sistema processam um usuário por vez com
+  `DatabaseUserScope`; não existe papel com bypass.
+- **Sugestões exigem o histórico** (`nexo.memory.suggestions` requer `nexo.memory` e
+  `nexo.history`). Assim o job da fila leva só identificadores e lê o texto já mascarado do
+  histórico. Gerar sugestões sem histórico exigiria pôr o conteúdo da conversa na fila. Memória
+  e histórico continuam independentes entre si.
+- **Falha da IA não grava nada** (nem a mensagem da pessoa, que fica no cliente para nova
+  tentativa). A proposta de arquitetura previa gravar a mensagem "sem resposta".
+- **Dado sensível na recuperação** só entra com similaridade vetorial ≥ 0,5. Coincidência de
+  palavras não basta.
+- **`review_due_at`** é calculado (última atividade + 180 dias), não armazenado.
+- **Diário de exclusões** preenchido por gatilho em `users`, `conversations`,
+  `conversation_messages`, `memories` e `memory_suggestions`. A aplicação só insere; o expurgo é
+  feito pela função `purge_deletion_journal`, que recusa janela menor que 35 dias.
+- **Exportação** cifrada em repouso com a `APP_KEY`; contém só os dados do NEXO (o restante
+  entra no painel "Meus dados", FASE 4).
+- **Backup:** scripts e teste de restauração prontos. O agendamento aguarda um dispositivo
+  físico separado (o servidor tem um único disco) e a autorização para registrar tarefas no
+  Windows. BitLocker desligado; habilitar aguarda autorização.

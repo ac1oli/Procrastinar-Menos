@@ -3,25 +3,26 @@
 > Atualize este arquivo ao fim de cada etapa. A seção **"Onde paramos"**
 > deve permitir que a próxima sessão continue exatamente daqui.
 
-## Onde paramos (2026-11-17)
+## Onde paramos (2026-11-18)
 
-- FASE 3: **ai-service e NEXO AI Gateway validados** com a IA real e com a IA fora do ar.
-  Backend: 81 testes; ai-service: 43 testes + 2 de integração com o Ollama real;
-  smoke test HTTP ponta a ponta: 15/15.
-- Definições do proprietário atendidas: exclusão de conta com retenção mínima e anônima
-  ([ADR-0006](docs/decisions/0006-retencao-e-exclusao-de-conta.md)), senha do PostgreSQL
-  rotacionada (48 caracteres, fora do Git) e ciclo de vida dos tokens de dispositivo
-  ([ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md)).
-- Memória do NEXO: [ADR-0008](docs/decisions/0008-memoria-do-nexo.md) **aceito** em 2026-11-17
-  (D1–D10 aprovadas com ajustes, §7). Implementação em andamento na branch `feat/nexo-memoria`,
-  na ordem do ADR-0008 §5:
-  1. Consentimentos independentes (`consents` + histórico) e verificação no gateway.
-  2. Histórico de conversas + retenção.
-  3. Memórias + embeddings `vector(1024)` assíncronos + revisão.
-  4. Recuperação híbrida (pgvector + busca textual) e contrato novo com o ai-service (ADR-0007).
-  5. Sugestões de memória com confirmação.
-  6. Exclusão de conta estendida, exportação, diário de exclusões e backup (D9).
-  7. Depois: dashboard React (FASE 3, último item).
+- FASE 3: **memória do NEXO implementada e validada** ([ADR-0008](docs/decisions/0008-memoria-do-nexo.md),
+  diferenças do plano em §8), na branch `feat/nexo-memoria`, aguardando revisão do proprietário
+  antes de integrar na `main`.
+  - Backend: 203 testes (882 verificações), sem IA real. ai-service: 63 testes + 4 de integração
+    com o Ollama real. Backup: 17 verificações de cifragem e restauração. Ponta a ponta com IA e
+    banco reais: 44/44.
+  - A aplicação agora conecta como `pm_runtime` (sem bypass de RLS); `pm_app` só via
+    `artisan-owner.ps1`.
+- **Aguardando o proprietário:**
+  1. Autorizar (ou não) habilitar o BitLocker no `C:` (desligado; TPM pronto).
+  2. Dispositivo físico separado para o backup e autorização para agendar as tarefas no Windows
+     ([backup-e-restauracao.md](docs/security/backup-e-restauracao.md) §4).
+  3. Autorizar remover do banco principal os registros anonimizados do teste ponta a ponta
+     (auditoria sem identificadores e 11 entradas do diário com UUIDs fictícios). Expiram
+     sozinhos em 365 e 35 dias.
+  4. Revisar e aprovar a integração de `feat/nexo-memoria` na `main`.
+- **Próxima ação após a integração:** dashboard React (FASE 3, último item), começando pelas
+  telas de consentimento (primeiro acesso), memórias e histórico.
 
 ## FASE 1 — Diagnóstico e planejamento ✅
 - [x] Inspeção de hardware, SO e ferramentas ([diagnóstico](docs/diagnostics/2026-11-16-fase1.md))
@@ -58,9 +59,12 @@
 - [x] Tokens de dispositivo: expiração (90 dias), rotação pelo agente, reemissão pelo usuário, limpeza diária
 - [x] Container `pm-scheduler` para as tarefas agendadas
 - [x] Arquitetura da memória do NEXO aprovada ([ADR-0008](docs/decisions/0008-memoria-do-nexo.md))
-- [ ] Memória do NEXO (consentimentos, histórico, memórias + embeddings `vector(1024)`) — em andamento
+- [x] Memória do NEXO: consentimentos independentes, histórico mascarado com retenção, memórias com embeddings `vector(1024)` assíncronos, recuperação híbrida, sugestões com confirmação, exportação, diário de exclusões
+- [x] RLS forçada nas tabelas do NEXO com papel de execução sem bypass (`pm_runtime`)
+- [x] Container `pm-queue` (fila)
+- [x] Backup cifrado + restauração com reaplicação de exclusões (scripts e teste); agendamento pendente de dispositivo
 - [ ] Dashboard React (Vite + TS + Tailwind + shadcn/ui) com sistema visual base
-- [x] Testes do backend (PHPUnit — 81 testes) e do ai-service (pytest — 43 + 2 de integração)
+- [x] Testes do backend (PHPUnit — 203 testes) e do ai-service (pytest — 63 + 4 de integração)
 - [ ] Testes do dashboard (Vitest)
 
 ## FASE 4 — Primeira versão funcional
@@ -85,8 +89,10 @@
 - ~~Senha do banco curta~~ → rotacionada em 2026-11-17.
 - ~~Retenção de `audit_logs`~~ → ADR-0006. Prazos de 90/365 dias a revisar juridicamente na FASE 6.
 - Pareamento de dispositivos por código curto: FASE 5.
-- Exportação de dados (portabilidade) ainda não implementada (FASE 4, painel "Meus dados").
+- Exportação: dados do NEXO prontos (`/api/me/exports`); perfil, rotina, objetivos e dispositivos na FASE 4.
 - Primeira mensagem após o modelo ficar ocioso leva ~25 s (carga na GPU); avaliar `keep_alive` maior ou pré-aquecimento.
 - `fastapi.testclient` emite aviso de depreciação (Starlette recomenda `httpx2`); acompanhar na próxima atualização de dependências.
-- Conversas com o NEXO ainda não são armazenadas (sem memória) — implementação em andamento (ADR-0008).
-- Não existe backup do banco. Proposta no ADR-0008 (D9); o estado do BitLocker no servidor não foi verificado.
+- Backup ainda não agendado: o servidor tem um único disco (falta dispositivo separado). BitLocker desligado no `C:`.
+- Sugestões reais do `qwen3:8b` têm qualidade irregular (erro de grafia, sugestão derivada da fala do NEXO); a confirmação da pessoa é a barreira. Avaliar ajuste de prompt com um conjunto de avaliação.
+- Limiar e quantidade da recuperação (0,35 / 6) não calibrados: falta o conjunto de avaliação (~50 pares).
+- Detecção de dados sensíveis é por padrões e palavras-chave: não é infalível (documentado na política).

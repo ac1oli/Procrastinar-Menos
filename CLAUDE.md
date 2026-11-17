@@ -68,3 +68,10 @@ ollama list
 - Mudou o contrato backend ↔ ai-service? Atualize os dois lados, os testes e o ADR-0007.
 - Novo tipo de evento de auditoria → classificar em `config/retention.php` (reter ou não).
 - Saída de modelo nunca vai ao usuário sem passar pela remoção de `<think>`.
+- A aplicação usa `pm_runtime` (sujeito à RLS). Migrations e testes: `artisan-owner.ps1`.
+  Tabela nova com dado do NEXO → `RowLevelSecurity::enable()` + `RowLevelSecurityTest`.
+- `migrate:fresh` não apaga funções do PostgreSQL: use `CREATE OR REPLACE FUNCTION`.
+- O uvicorn do ai-service não recarrega código: `docker restart pm-ai-service` após mudanças.
+- Em testes, trocar de usuário com sessão web exige `flushSession()` (AuthenticateSession).
+- No PowerShell, `H` é alias de `Get-History`: não nomeie funções de script com aliases.
+- Conteúdo de conversa/memória nunca vai para fila, log ou auditoria: jobs levam só IDs.

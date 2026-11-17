@@ -54,8 +54,14 @@ Todas as rotas `/v1/*` exigem `Authorization: Bearer $AI_SERVICE_TOKEN`.
 | Rota | Entrada | Saída |
 |---|---|---|
 | `GET /health` | — | `{status, provider: up\|down}` |
-| `POST /v1/nexo/reply` | `{message, context{timezone, local_datetime}}` | `{reply, model, prompt_version}` |
-| `POST /v1/embed` | `{texts[]}` | `{model, dimensions, vectors}` |
+| `POST /v1/nexo/reply` | `{message, context{timezone, local_datetime, memories[], profile?}, history[]}` | `{reply, model, prompt_version}` |
+| `POST /v1/embed` | `{texts[], purpose: document\|query}` | `{model, dimensions, vectors}` |
+| `POST /v1/nexo/suggest` | `{exchange[user, assistant], max_suggestions}` | `{suggestions[]{kind, content, rationale, sensitivity}, model, prompt_version}` |
+
+Contrato completo e limites: [ADR-0007](../docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md).
+Memórias e perfil entram no prompt como dados delimitados (nunca como instrução). O serviço
+não guarda nada. Depois de mudar o código, reinicie o container (`docker restart pm-ai-service`):
+o uvicorn roda sem recarga automática.
 
 Erros: `{error, message}`, com `ai_unavailable`/`ai_busy` (503), `ai_timeout` (504) e
 `ai_invalid_response` (502).

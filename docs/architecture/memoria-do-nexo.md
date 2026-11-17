@@ -204,7 +204,7 @@ acima são o ponto de partida, não resultados.
 | Falha | Comportamento |
 |---|---|
 | Embedding indisponível ou lento (orçamento de ~2 s) | Usa fixadas + busca textual. A resposta segue se o chat estiver de pé |
-| Chat indisponível | 503 como hoje. Nada é gravado além da mensagem do usuário (se o histórico estiver ligado), marcada como "sem resposta" |
+| Chat indisponível | 503 como hoje. **Nada é gravado**; a mensagem fica no cliente para nova tentativa (ajuste na implementação, ADR-0008 §8) |
 | Banco indisponível | Erro 503 genérico. Nenhum contexto é montado com dados parciais de outra origem |
 
 ### 5.3 Contexto temporário: formato e proteção
@@ -223,8 +223,8 @@ acima são o ponto de partida, não resultados.
 
 ### 5.4 Sugestões de memória
 
-- Depois de responder, e só com `nexo.memory.suggestions`, o backend pode chamar
-  `/v1/nexo/suggest` com a última troca.
+- Depois de responder, e só com `nexo.memory.suggestions` (que exige memória **e histórico**,
+  ADR-0008 §8), o backend pode chamar `/v1/nexo/suggest` com a última troca já gravada.
   - Assíncrono, para não atrasar a resposta.
   - Fora de "conversa privada".
 - O modelo devolve no máximo 2 candidatas em JSON (`kind`, `content`, `rationale`,
