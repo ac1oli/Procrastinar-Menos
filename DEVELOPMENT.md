@@ -61,12 +61,26 @@ log (`%LOCALAPPDATA%\Ollama\server.log`) a linha `inference compute ... library=
 O log também avisa "AMD driver is too old" — isso se refere ao backend
 ROCm, que não suporta esta GPU de qualquer forma; não afeta o Vulkan.
 
-## 5. Componentes
+## 5. Backend (Laravel)
+
+```powershell
+docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d --build
+docker exec pm-backend composer install
+Copy-Item backend/.env.example backend/.env   # se ainda não existir
+docker exec pm-backend php artisan key:generate
+docker exec pm-backend php artisan migrate
+docker exec pm-backend php artisan test
+```
+
+API em `http://127.0.0.1:8000`. Detalhes, rotas e convenções em
+[backend/README.md](backend/README.md).
+
+## 6. Demais componentes
 
 Cada pasta terá seu próprio guia ao ser inicializada:
-`backend/`, `ai-service/`, `dashboard/`, `desktop-agent/`, `mobile/`, `browser-extension/`.
+`ai-service/`, `dashboard/`, `desktop-agent/`, `mobile/`, `browser-extension/`.
 
-## 6. Fluxo Git
+## 7. Fluxo Git
 
 - `main` é estável. Trabalho em branches `feat/<modulo>-<descricao>`,
   `fix/...`, `docs/...`, `chore/...`.

@@ -104,3 +104,4 @@ Modelo local: ver [ADR-0004](docs/decisions/0004-modelo-local.md).
 - [ADR-0002](docs/decisions/0002-ambiente-docker-e-ollama-nativo.md) — Docker para infraestrutura, Ollama nativo
 - [ADR-0003](docs/decisions/0003-nexo-ai-gateway.md) — NEXO AI Gateway e memória fora do modelo
 - [ADR-0004](docs/decisions/0004-modelo-local.md) — Modelos locais escolhidos
+- [ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md) — Autenticação de usuários e dispositivos
