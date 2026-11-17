@@ -47,14 +47,63 @@ services:
       DB_DATABASE: ${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      NEXO_AI_SERVICE_URL: http://ai-service:8100
+      NEXO_AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
-    extra_hosts:
-      # Permite alcançar o Ollama/ai-service nativos do Windows.
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Tarefas agendadas do Laravel (retenção de auditoria, limpeza de tokens).
+  scheduler:
+    image: procrastinar-menos/backend-dev:local
+    container_name: pm-scheduler
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../../backend:/app
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # O backend continua funcionando sem este serviço (ADR-0003); por isso
+  # não há depends_on dele no backend.
+  ai-service:
+    build:
+      context: ../../ai-service
+      dockerfile: ../infrastructure/docker/ai-service/Dockerfile
+    image: procrastinar-menos/ai-service-dev:local
+    container_name: pm-ai-service
+    restart: unless-stopped
+    volumes:
+      - ../../ai-service:/app
+    environment:
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?defina AI_SERVICE_TOKEN no .env}
+      # Docker Desktop encaminha host.docker.internal ao loopback do Windows,
+      # onde o Ollama escuta (127.0.0.1:11434) sem ficar exposto à rede.
+      AI_OLLAMA_URL: http://host.docker.internal:11434
+      AI_CHAT_MODEL: qwen3:8b
+      AI_EMBED_MODEL: qwen3-embedding:0.6b
+    ports:
+      - "127.0.0.1:${AI_SERVICE_PORT:-8100}:8100"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
 volumes:
   pm_pgdata:

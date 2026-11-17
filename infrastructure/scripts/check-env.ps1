@@ -69,6 +69,16 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
     } catch {
         Write-Check 'Backend (pm-backend)' $false 'sem resposta em http://127.0.0.1:8000/up'
     }
+
+    try {
+        $ai = Invoke-RestMethod 'http://127.0.0.1:8100/health' -TimeoutSec 5
+        Write-Check 'ai-service (pm-ai-service)' ($ai.provider -eq 'up') "provedor de modelo: $($ai.provider)"
+    } catch {
+        Write-Check 'ai-service (pm-ai-service)' $false 'sem resposta em http://127.0.0.1:8100/health'
+    }
+
+    $sched = docker inspect -f '{{.State.Status}}' pm-scheduler 2>$null
+    Write-Check 'Agendador (pm-scheduler)' ($sched -eq 'running') $(if ($sched) { $sched } else { 'container não existe' })
 }
 
 Write-Host "`n== Ollama ==" -ForegroundColor Cyan
