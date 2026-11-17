@@ -79,6 +79,16 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
 
     $sched = docker inspect -f '{{.State.Status}}' pm-scheduler 2>$null
     Write-Check 'Agendador (pm-scheduler)' ($sched -eq 'running') $(if ($sched) { $sched } else { 'container não existe' })
+
+    $queue = docker inspect -f '{{.State.Status}}' pm-queue 2>$null
+    Write-Check 'Fila (pm-queue)' ($queue -eq 'running') $(if ($queue) { $queue } else { 'container não existe' })
+
+    # A aplicação não pode conectar como superusuário nem com BYPASSRLS (ADR-0008, D8).
+    $appUser = docker exec pm-backend sh -c 'echo $DB_USERNAME' 2>$null
+    if ($appUser) {
+        $flags = docker exec pm-postgres sh -c "psql -U `"`$POSTGRES_USER`" -d `"`$POSTGRES_DB`" -tAc `"select rolsuper or rolbypassrls from pg_roles where rolname = '$appUser'`"" 2>$null
+        Write-Check 'Papel da aplicação' ($flags -eq 'f') $(if ($flags -eq 'f') { "$appUser sem superusuário/BYPASSRLS" } else { "$appUser pode contornar a RLS" })
+    }
 }
 
 Write-Host "`n== Ollama ==" -ForegroundColor Cyan

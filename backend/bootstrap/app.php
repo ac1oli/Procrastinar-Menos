@@ -33,6 +33,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'db.user' => ScopeDatabaseToUser::class,
         ]);
 
+        // API de SPA: não existe rota "login" para redirecionar. Sem isto, uma
+        // requisição sem "Accept: application/json" recebia 500 em vez de 401.
+        $middleware->redirectGuestsTo(fn () => null);
+
         // O escopo da RLS precisa existir antes do route model binding.
         $middleware->prependToPriorityList(SubstituteBindings::class, ScopeDatabaseToUser::class);
     })

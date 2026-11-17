@@ -22,6 +22,14 @@ class AuthTest extends TestCase
         ], $overrides);
     }
 
+    public function test_unauthenticated_api_request_without_json_accept_is_401_not_500(): void
+    {
+        // Achado no teste ponta a ponta: sem Accept JSON, o Laravel tentava
+        // redirecionar para uma rota "login" que não existe (500).
+        $this->get('/api/me')->assertUnauthorized();
+        $this->get('/api/nexo/memories')->assertUnauthorized();
+    }
+
     public function test_registers_user_and_starts_session(): void
     {
         $response = $this->fromDashboard()->postJson('/api/auth/register', $this->registrationPayload());
