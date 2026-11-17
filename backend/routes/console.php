@@ -10,3 +10,6 @@ Schedule::command('sanctum:prune-expired --hours=24')->dailyAt('03:10');
 
 // Retenção do NEXO: histórico, sugestões e revisão de memórias (ADR-0008 §6).
 Schedule::command('nexo:apply-retention')->dailyAt('03:20');
+
+// Embeddings faltantes (IA fora do ar, troca de modelo, restauração de backup).
+Schedule::command('nexo:reindex-memories')->hourly();

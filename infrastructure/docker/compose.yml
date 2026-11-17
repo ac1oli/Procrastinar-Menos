@@ -79,6 +79,31 @@ services:
       backend:
         condition: service_started
 
+  # Fila do Laravel: embeddings de memórias e sugestões do NEXO (ADR-0008).
+  # O payload dos jobs leva só identificadores, nunca conteúdo.
+  queue:
+    image: procrastinar-menos/backend-dev:local
+    container_name: pm-queue
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../../backend:/app
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_RUNTIME_USER}
+      DB_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD}
+      NEXO_AI_SERVICE_URL: http://ai-service:8100
+      NEXO_AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--max-time=3600"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
   # O backend continua funcionando sem este serviço (ADR-0003); por isso
   # não há depends_on dele no backend.
   ai-service:

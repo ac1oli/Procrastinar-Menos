@@ -7,6 +7,7 @@ use App\Modules\Devices\Http\Controllers\DeviceController;
 use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
 use App\Modules\Identity\Http\Controllers\AuthController;
+use App\Modules\Memory\Http\Controllers\MemoryController;
 use App\Modules\Nexo\Http\Controllers\NexoController;
 use App\Modules\Routine\Http\Controllers\RoutineBlockController;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +54,10 @@ Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () 
     Route::delete('nexo/conversations/{conversation}', [ConversationController::class, 'destroy']);
     Route::delete('nexo/conversations/{conversation}/messages/{message}', [ConversationController::class, 'destroyMessage'])
         ->scopeBindings();
+
+    Route::delete('nexo/memories', [MemoryController::class, 'destroyAll']);
+    Route::post('nexo/memories/{memory}/review', [MemoryController::class, 'review']);
+    Route::apiResource('nexo/memories', MemoryController::class)->parameters(['memories' => 'memory']);
 });
 
 Route::prefix('device')->middleware(['auth:sanctum', 'actor:device', 'abilities:device:sync'])->group(function () {

@@ -42,8 +42,10 @@ final class SensitiveDataRedactor
         $replace('/-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----/s', 'private_key');
         $replace('/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/', 'token');
         $replace('/\b(?:sk|pk|rk)-[A-Za-z0-9_-]{16,}|\bgh[pousr]_[A-Za-z0-9]{20,}|\bxox[abpr]-[A-Za-z0-9-]{10,}|\bAKIA[0-9A-Z]{16}\b|\bAIza[0-9A-Za-z_-]{30,}/', 'token');
-        // "senha: x", "minha senha é x", "token=x": mantém a palavra, remove o valor.
-        $replace('/(?<keep>\b(?:senhas?|password|passwd|pwd|token|api[ _-]?key|chave de api|secret|segredo|pin)\b\s*(?:[:=]|\bé\b|\beh\b)\s*)\S+/iu', 'credential');
+        // "senha: x", "minha senha é x", "token=x", "senha do curso: x": mantém o rótulo, remove o valor.
+        $keyword = '\b(?:senhas?|password|passwd|pwd|token|api[ _-]?key|chave de api|secret|segredo|pin)\b';
+        $replace('/(?<keep>'.$keyword.'\s*(?:[:=]|\bé\b|\beh\b)\s*)\S+/iu', 'credential');
+        $replace('/(?<keep>'.$keyword.'(?:\s+[^\s:=]+){1,3}\s*[:=]\s*)(?!\[)\S+/iu', 'credential');
         $replace('/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/', 'email');
         $replace('/(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)/', 'card', fn ($m) => self::luhn(preg_replace('/\D/', '', $m[0])));
         $replace('/(?<!\d)\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}(?!\d)/', 'cnpj', fn ($m) => self::validCnpj(preg_replace('/\D/', '', $m[0])));

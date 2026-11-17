@@ -24,6 +24,8 @@ class RowLevelSecurityTest extends TestCase
         'nexo_preferences',
         'conversations',
         'conversation_messages',
+        'memories',
+        'memory_embeddings',
     ];
 
     public function test_application_connection_cannot_bypass_rls(): void

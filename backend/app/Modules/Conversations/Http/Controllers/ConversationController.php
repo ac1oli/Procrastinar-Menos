@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Modules\Audit\AuditLogger;
 use App\Modules\Conversations\Models\Conversation;
 use App\Modules\Conversations\Models\ConversationMessage;
+use App\Modules\Memory\Models\Memory;
 use App\Modules\Nexo\Privacy\SensitiveDataRedactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -45,6 +47,10 @@ class ConversationController extends Controller
 
         return response()->json(['data' => [
             ...$this->summary($conversation->loadCount('messages')),
+            // Para a tela de exclusão oferecer apagar também as memórias nascidas aqui.
+            'memories_from_this_conversation' => Memory::ownedBy($conversation->user)
+                ->where('source_conversation_id', $conversation->id)
+                ->pluck('id'),
             'messages' => $messages->map(fn (ConversationMessage $m) => [
                 'id' => $m->id,
                 'role' => $m->role,
@@ -65,12 +71,23 @@ class ConversationController extends Controller
         return response()->json(['data' => $this->summary($conversation->loadCount('messages'))]);
     }
 
-    public function destroy(Conversation $conversation): Response
+    /**
+     * Exclui a conversa e seus derivados sem outra finalidade (sugestões
+     * pendentes, registros de uso). Memórias confirmadas a partir dela só são
+     * apagadas se a pessoa pedir (`with_memories`); senão perdem o vínculo.
+     */
+    public function destroy(Request $request, Conversation $conversation): Response
     {
         Gate::authorize('delete', $conversation);
+        $withMemories = $request->boolean('with_memories');
 
-        $conversation->delete();
-        $this->audit->record('nexo.conversation.deleted', $conversation->user, $conversation);
+        DB::transaction(function () use ($conversation, $withMemories) {
+            if ($withMemories) {
+                Memory::ownedBy($conversation->user)->where('source_conversation_id', $conversation->id)->delete();
+            }
+            $conversation->delete();
+        });
+        $this->audit->record('nexo.conversation.deleted', $conversation->user, $conversation, ['with_memories' => $withMemories]);
 
         return response()->noContent();
     }

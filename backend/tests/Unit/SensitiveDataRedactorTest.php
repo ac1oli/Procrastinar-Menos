@@ -23,6 +23,8 @@ class SensitiveDataRedactorTest extends TestCase
             'RG' => ['RG 12.345.678-9', '12.345.678-9', '[RG removido]'],
             'senha declarada' => ['minha senha é Tr0ub4dor&3', 'Tr0ub4dor&3', 'senha é [credencial removida]'],
             'senha com dois pontos' => ['senha: hunter2', 'hunter2', 'senha: [credencial removida]'],
+            'senha com rótulo' => ['Senha do curso: hunter2', 'hunter2', 'Senha do curso: [credencial removida]'],
+            'token com rótulo' => ['token da API = abc123xyz', 'abc123xyz', '[credencial removida]'],
             'token de API' => ['use sk-abcdefghijklmnop1234 no teste', 'sk-abcdefghijklmnop1234', '[token removido]'],
             'token GitHub' => ['ghp_abcdefghijklmnopqrstuvwxyz0123', 'ghp_abcdefghijklmnopqrstuvwxyz0123', '[token removido]'],
             'JWT' => ['eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.abcdefghijklmnop', 'eyJhbGciOiJIUzI1NiJ9', '[token removido]'],
