@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         __DIR__.'/../app/Modules/Audit/Console',
+        __DIR__.'/../app/Modules/Nexo/Console',
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();

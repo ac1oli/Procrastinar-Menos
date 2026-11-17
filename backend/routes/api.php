@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Consent\Http\Controllers\ConsentController;
+use App\Modules\Conversations\Http\Controllers\ConversationController;
+use App\Modules\Conversations\Http\Controllers\NexoPreferenceController;
 use App\Modules\Devices\Http\Controllers\DeviceController;
 use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
@@ -39,6 +41,18 @@ Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () 
     Route::get('nexo/consents/history', [ConsentController::class, 'history']);
     Route::put('nexo/consents/{scope}', [ConsentController::class, 'update'])
         ->where('scope', 'nexo\.[a-z.]+');
+
+    Route::get('nexo/preferences', [NexoPreferenceController::class, 'show']);
+    Route::put('nexo/preferences', [NexoPreferenceController::class, 'update']);
+    Route::get('nexo/preferences/retention-preview', [NexoPreferenceController::class, 'preview']);
+
+    Route::get('nexo/conversations', [ConversationController::class, 'index']);
+    Route::delete('nexo/conversations', [ConversationController::class, 'destroyAll']);
+    Route::get('nexo/conversations/{conversation}', [ConversationController::class, 'show']);
+    Route::patch('nexo/conversations/{conversation}', [ConversationController::class, 'update']);
+    Route::delete('nexo/conversations/{conversation}', [ConversationController::class, 'destroy']);
+    Route::delete('nexo/conversations/{conversation}/messages/{message}', [ConversationController::class, 'destroyMessage'])
+        ->scopeBindings();
 });
 
 Route::prefix('device')->middleware(['auth:sanctum', 'actor:device', 'abilities:device:sync'])->group(function () {

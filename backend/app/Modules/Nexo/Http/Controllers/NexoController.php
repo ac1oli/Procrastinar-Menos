@@ -3,8 +3,8 @@
 namespace App\Modules\Nexo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Nexo\Actions\SendNexoMessage;
 use App\Modules\Nexo\Contracts\NexoGateway;
-use App\Modules\Nexo\Data\ReplyContext;
 use App\Modules\Nexo\Exceptions\AiUnavailableException;
 use App\Modules\Nexo\Http\Requests\NexoMessageRequest;
 use Illuminate\Http\JsonResponse;
@@ -12,21 +12,22 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Conversa direta com o NEXO (FASE 3: sem memória persistida).
- *
- * As mensagens ainda não são armazenadas; a memória do NEXO será um módulo
- * próprio, com consentimento e retenção configuráveis.
+ * Conversa com o NEXO. O que é guardado e usado depende dos consentimentos
+ * (ADR-0008); a regra fica em SendNexoMessage.
  */
 class NexoController extends Controller
 {
     public function __construct(private readonly NexoGateway $gateway) {}
 
-    public function message(NexoMessageRequest $request): JsonResponse
+    public function message(NexoMessageRequest $request, SendNexoMessage $send): JsonResponse
     {
         try {
-            $reply = $this->gateway->reply(
+            $result = $send(
+                $request->user(),
                 $request->validated('message'),
-                ReplyContext::forUser($request->user()),
+                $request->validated('conversation_id'),
+                $request->boolean('private'),
+                $request->clientHistory(),
             );
         } catch (AiUnavailableException $e) {
             return response()->json([
@@ -35,13 +36,7 @@ class NexoController extends Controller
             ], Response::HTTP_SERVICE_UNAVAILABLE, ['Retry-After' => (string) config('nexo.retry_after')]);
         }
 
-        return response()->json([
-            'data' => [
-                'reply' => $reply->text,
-                'model' => $reply->model,
-                'prompt_version' => $reply->promptVersion,
-            ],
-        ]);
+        return response()->json(['data' => $result->toArray()]);
     }
 
     /** Disponibilidade da IA para o dashboard; cache curto para não sobrecarregar o ai-service. */

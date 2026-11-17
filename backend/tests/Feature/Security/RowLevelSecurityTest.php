@@ -21,6 +21,9 @@ class RowLevelSecurityTest extends TestCase
     public const PROTECTED_TABLES = [
         'consents',
         'consent_events',
+        'nexo_preferences',
+        'conversations',
+        'conversation_messages',
     ];
 
     public function test_application_connection_cannot_bypass_rls(): void

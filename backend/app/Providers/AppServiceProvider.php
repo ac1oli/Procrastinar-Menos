@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Modules\Consent\Events\ConsentRevoked;
+use App\Modules\Conversations\Listeners\ApplyHistoryRevocation;
 use App\Modules\Nexo\Contracts\NexoGateway;
 use App\Modules\Nexo\Gateway\HttpNexoGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -42,7 +45,12 @@ class AppServiceProvider extends ServiceProvider
             'device' => '[0-9a-fA-F-]{36}',
             'routineBlock' => '[0-9a-fA-F-]{36}',
             'goal' => '[0-9a-fA-F-]{36}',
+            'conversation' => '[0-9a-fA-F-]{36}',
+            'message' => '[0-9a-fA-F-]{36}',
         ]);
+
+        // Cada módulo dono de dados aplica a escolha da pessoa ao revogar (D7).
+        Event::listen(ConsentRevoked::class, ApplyHistoryRevocation::class);
     }
 
     private function configureRateLimiting(): void
