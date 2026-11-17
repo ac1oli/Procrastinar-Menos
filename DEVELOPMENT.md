@@ -75,12 +75,25 @@ docker exec pm-backend php artisan test
 API em `http://127.0.0.1:8000`. Detalhes, rotas e convenções em
 [backend/README.md](backend/README.md).
 
-## 6. Demais componentes
+## 6. ai-service (FastAPI)
+
+Sobe junto com o compose (`pm-ai-service`, `127.0.0.1:8100`). Requer
+`AI_SERVICE_TOKEN` em `infrastructure/docker/.env` (veja o `.env.example`).
+
+```powershell
+docker exec pm-ai-service python -m pytest -q
+docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integration
+docker exec pm-ai-service ruff check .
+```
+
+Detalhes em [ai-service/README.md](ai-service/README.md).
+
+## 7. Demais componentes
 
 Cada pasta terá seu próprio guia ao ser inicializada:
-`ai-service/`, `dashboard/`, `desktop-agent/`, `mobile/`, `browser-extension/`.
+`dashboard/`, `desktop-agent/`, `mobile/`, `browser-extension/`.
 
-## 7. Fluxo Git
+## 8. Fluxo Git
 
 - `main` é estável. Trabalho em branches `feat/<modulo>-<descricao>`,
   `fix/...`, `docs/...`, `chore/...`.

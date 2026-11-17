@@ -14,11 +14,20 @@ define as regras; cada componente deve segui-las desde o primeiro commit.
 - Se um segredo vazar: revogar/rotacionar **imediatamente**; reescrever o
   histórico só com autorização explícita do proprietário.
 
+### Rotação de credenciais locais
+- `POSTGRES_PASSWORD`: com o volume já criado, alterar só o `.env` **não** muda a
+  senha. É preciso aplicar `ALTER ROLE … WITH PASSWORD` via stdin dentro do container,
+  atualizar o `.env` e recriar os containers. Rotacionada em 2026-11-17 (48 caracteres).
+- `AI_SERVICE_TOKEN`: trocar no `.env` e recriar `backend`, `scheduler` e `ai-service`.
+
 ## 2. Autenticação e autorização
 
 - Usuários: Laravel Sanctum (sessão para o dashboard; tokens para dispositivos).
-- Dispositivos: token próprio, revogável, vinculado a um usuário e com
-  escopos mínimos (ex.: `events:write`, `rules:read`).
+- Dispositivos: token próprio, revogável, vinculado a um usuário, com
+  escopos mínimos (ex.: `events:write`, `rules:read`), expiração (90 dias),
+  renovação pelo agente e reemissão pelo usuário ([ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md)).
+- Serviço-a-serviço (backend → ai-service): segredo compartilhado `AI_SERVICE_TOKEN`
+  comparado em tempo constante ([ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md)).
 - Toda consulta a dados pessoais passa por policy/escopo de `user_id` no
   backend. O frontend nunca é fonte de autorização.
 - Rate limiting em login, APIs de dispositivos e endpoints do NEXO.
@@ -44,6 +53,9 @@ em cada dispositivo.
 
 ## 4. Direitos do usuário (LGPD)
 
+Retenção e exclusão: ver [docs/security/retencao-de-dados.md](docs/security/retencao-de-dados.md)
+(exclusão de conta já implementada em `DELETE /api/me`).
+
 A aplicação deverá oferecer:
 - Painel "Meus dados": o que é coletado, por quê, onde fica, por quanto tempo.
 - Lista de dispositivos vinculados e permissões concedidas, com revogação.
@@ -66,7 +78,10 @@ consentimento e anonimização adequados.
 
 - Logs técnicos não contêm conteúdo de mensagens, URLs completas com
   parâmetros sensíveis, tokens ou dados pessoais desnecessários.
-- Prompts e respostas do NEXO não vão para logs técnicos.
+- Prompts e respostas do NEXO não vão para logs técnicos (backend e ai-service
+  registram apenas o motivo de falhas).
+- O raciocínio interno do modelo (`<think>`) é removido no ai-service e de novo no
+  backend; nunca chega ao usuário.
 
 ## 7. Backups
 

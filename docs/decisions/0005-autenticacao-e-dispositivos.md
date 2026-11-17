@@ -38,6 +38,20 @@ dados entre dispositivos.
 - Agentes precisam de um fluxo de pareamento (hoje: o dashboard cria o
   dispositivo e o usuário copia o token). Um pareamento por código curto
   deve substituí-lo na FASE 5.
-- Tokens de dispositivo ainda não expiram; rotação/expiração fica para a FASE 5.
-- A retenção de `audit_logs` após exclusão de conta (hoje `user_id` vira
-  NULL e o IP permanece) precisa de definição de LGPD antes de dados reais.
+- ~~Retenção de `audit_logs` após exclusão de conta~~ → resolvida no
+  [ADR-0006](0006-retencao-e-exclusao-de-conta.md).
+
+## Atualização 2026-11-17 — ciclo de vida dos tokens
+- **Expiração:** `DEVICE_TOKEN_TTL_DAYS` (padrão 90; `0` desativa). O Sanctum rejeita
+  tokens vencidos; `devices.token_expires_at` espelha a validade para listagens.
+- **Um token ativo por dispositivo:** `Device::issueToken()` apaga os anteriores na
+  mesma transação.
+- **Renovação pelo agente:** `POST /api/device/token/rotate` devolve token novo e invalida
+  o atual. O heartbeat (`GET /api/device/me`) informa `token_renewal_due` nos últimos
+  `DEVICE_TOKEN_RENEWAL_WINDOW_DAYS` (padrão 15) dias.
+- **Reemissão pelo usuário:** `POST /api/devices/{id}/token` (token perdido ou expirado;
+  bloqueada para dispositivo revogado). Limitada pelo throttle de autenticação.
+- **Revogação:** apaga tokens e zera `token_expires_at`.
+- **Limpeza:** `sanctum:prune-expired --hours=24`, diário.
+- Rotação e reemissão são auditadas (`device.token_rotated`, `device.token_reissued`).
+- O **pareamento por código curto continua na FASE 5**, fora deste escopo.

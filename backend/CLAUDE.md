@@ -20,7 +20,14 @@ Complementa o [CLAUDE.md da raiz](../CLAUDE.md). Leia-o primeiro.
   `auth:sanctum` + `actor:device` + `abilities:…`.
 - Novo parâmetro de rota UUID → adicionar em `Route::patterns` (AppServiceProvider).
 - Operações sensíveis (credenciais, consentimento, exportação/exclusão) →
-  `AuditLogger::record()`, sem dados pessoais no `metadata`.
+  `AuditLogger::record()`, sem dados pessoais no `metadata`. Classifique o novo evento
+  em `config/retention.php`.
+- IA só via `NexoGateway`; trate `AiUnavailableException` e degrade sem quebrar o fluxo.
+  Em testes, use `Tests\Fakes\FakeNexoGateway` ou `Http::fake()` (requisições reais
+  são bloqueadas por `Http::preventStrayRequests()`).
+- Encerrar sessão: use `AuthController::endSession()`. Só `logout()` não basta, porque o guard
+  do Sanctum mantém o usuário e o driver de sessão em banco gravaria o `user_id`.
+- Testes com cookie de sessão em requisições JSON exigem `withCredentials()`.
 
 ## Antes de commitar
 ```powershell

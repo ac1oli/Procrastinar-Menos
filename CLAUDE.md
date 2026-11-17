@@ -46,7 +46,10 @@ Tailwind + shadcn/ui · C#/.NET (agente Windows) · Kotlin + Compose
 ## Comandos úteis
 ```powershell
 pwsh infrastructure/scripts/check-env.ps1 [-TestModel qwen3:8b]
-docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d
+docker compose -f infrastructure/docker/compose.yml --env-file infrastructure/docker/.env up -d --build
+docker exec pm-backend php artisan test                 # backend (sem IA real)
+docker exec pm-ai-service python -m pytest -q           # ai-service (mocks)
+docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integration
 ollama list
 ```
 
@@ -59,3 +62,7 @@ ollama list
 - Porta 5432 pertence a um PostgreSQL 16 nativo de **outro projeto** — não
   tocar. O banco deste projeto é o container `pm-postgres` em `127.0.0.1:5433`.
 - A imagem `composer:2` não tem `pdo_pgsql`/`intl`/`bcmath`; o backend usa Dockerfile próprio.
+- Containers alcançam o Ollama (loopback do Windows) por `host.docker.internal:11434`.
+- Mudou o contrato backend ↔ ai-service? Atualize os dois lados, os testes e o ADR-0007.
+- Novo tipo de evento de auditoria → classificar em `config/retention.php` (reter ou não).
+- Saída de modelo nunca vai ao usuário sem passar pela remoção de `<think>`.

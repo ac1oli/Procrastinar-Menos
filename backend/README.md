@@ -1,7 +1,7 @@
 # backend — Laravel 13 (PHP 8.4, em container)
 
-> **Status:** fundação implementada e testada (FASE 3). Ainda sem
-> integração com IA (o `NexoGateway` é o próximo passo).
+> **Status:** fundação implementada e testada (FASE 3), com o NEXO AI Gateway
+> integrado ao ai-service.
 
 Monólito modular responsável por regras de negócio, autenticação,
 dispositivos, rotinas, objetivos, auditoria e APIs. Integra-se à IA
@@ -38,6 +38,7 @@ app/
     Devices/                 Dispositivos, token por dispositivo, revogação, consentimento
     Routine/                 Blocos recorrentes da rotina planejada
     Goals/                   Objetivos pessoais, profissionais e de aprendizagem
+    Nexo/                    NexoGateway (interface) + HttpNexoGateway, erros tipados, endpoint de conversa
 ```
 
 Regras: cada módulo só acessa suas tabelas; toda tabela pessoal tem
@@ -51,20 +52,26 @@ Regras: cada módulo só acessa suas tabelas; toda tabela pessoal tem
 | POST | `/api/auth/login` | — (sessão SPA, throttle 5/min) | Inicia sessão |
 | POST | `/api/auth/logout` | usuário | Encerra sessão |
 | GET | `/api/me` | usuário | Perfil |
-| GET/POST | `/api/devices` | usuário | Lista / vincula (token retornado **uma vez**) |
+| DELETE | `/api/me` | usuário (+ senha) | Exclui a conta ([política](../docs/security/retencao-de-dados.md)) |
+| GET/POST | `/api/devices` | usuário | Lista / vincula (token retornado **uma vez**, com validade) |
 | GET/PATCH/DELETE | `/api/devices/{id}` | usuário | Ver / renomear ou consentimento / revogar |
+| POST | `/api/devices/{id}/token` | usuário | Reemite o token (invalida o anterior) |
+| GET | `/api/nexo/status` | usuário | IA disponível? (cache de 15 s) |
+| POST | `/api/nexo/messages` | usuário (10/min) | Conversa com o NEXO; 503 + `reason` se a IA estiver fora |
 | GET/POST | `/api/routine-blocks` | usuário | Lista / cria blocos |
 | GET/PATCH/DELETE | `/api/routine-blocks/{id}` | usuário | — |
 | GET/POST | `/api/goals` | usuário | Lista / cria objetivos |
 | GET/PATCH/DELETE | `/api/goals/{id}` | usuário | — |
-| GET | `/api/device/me` | token de dispositivo | Heartbeat e estado de consentimento |
+| GET | `/api/device/me` | token de dispositivo | Heartbeat, consentimento e `token_renewal_due` |
+| POST | `/api/device/token/rotate` | token de dispositivo | Renova o próprio token |
 
 Fluxo SPA: `GET /sanctum/csrf-cookie` → enviar `X-XSRF-TOKEN` em cada
 requisição de escrita, com `Origin` listada em `SANCTUM_STATEFUL_DOMAINS`.
 
 ## Testes
 
-38 testes de feature/unidade cobrindo: autenticação e rate limiting,
-isolamento entre usuários, separação de credenciais usuário × dispositivo,
-revogação de tokens, auditoria de consentimento, validações e o uso do
-banco de testes isolado com pgvector.
+81 testes cobrindo: autenticação e rate limiting, isolamento entre usuários,
+separação de credenciais usuário × dispositivo, ciclo de vida de tokens, exclusão de
+conta e retenção, NEXO AI Gateway (com `Http::fake`, sem IA real), degradação com a IA
+fora do ar e o banco de testes isolado. `Http::preventStrayRequests()` impede chamadas
+HTTP reais acidentais.

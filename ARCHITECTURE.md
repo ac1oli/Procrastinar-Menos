@@ -25,15 +25,21 @@
                      ▼                     ▼
           ┌────────────────────┐  ┌──────────────────────┐
           │ PostgreSQL 18      │  │ ai-service (FastAPI) │
-          │ + pgvector         │  │ ModelProvider        │
-          │ (fonte da verdade, │  │  └── OllamaProvider  │
-          │  memória do NEXO)  │  └──────────┬───────────┘
-          └────────────────────┘             ▼
+          │ + pgvector         │  │ persona + prompts    │
+          │ (fonte da verdade, │  │ ModelProvider        │
+          │  memória do NEXO)  │  │  └── OllamaProvider  │
+          └────────────────────┘  └──────────┬───────────┘
+                                             │ host.docker.internal
+                                             ▼
                                    ┌──────────────────────┐
                                    │ Ollama (nativo, GPU  │
-                                   │ AMD via Vulkan)      │
+                                   │ AMD via Vulkan,      │
+                                   │ só 127.0.0.1)        │
                                    └──────────────────────┘
 ```
+
+Containers (Docker Compose): `pm-postgres`, `pm-backend`, `pm-scheduler` (tarefas
+agendadas) e `pm-ai-service`. O Ollama roda nativo no Windows.
 
 ## 2. Componentes e responsabilidades
 
@@ -104,4 +110,6 @@ Modelo local: ver [ADR-0004](docs/decisions/0004-modelo-local.md).
 - [ADR-0002](docs/decisions/0002-ambiente-docker-e-ollama-nativo.md) — Docker para infraestrutura, Ollama nativo
 - [ADR-0003](docs/decisions/0003-nexo-ai-gateway.md) — NEXO AI Gateway e memória fora do modelo
 - [ADR-0004](docs/decisions/0004-modelo-local.md) — Modelos locais escolhidos
-- [ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md) — Autenticação de usuários e dispositivos
+- [ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md) — Autenticação de usuários e dispositivos (+ ciclo de vida dos tokens)
+- [ADR-0006](docs/decisions/0006-retencao-e-exclusao-de-conta.md) — Retenção de auditoria e exclusão de conta
+- [ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md) — Serviço de IA: contrato, segurança e resiliência

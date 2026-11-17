@@ -3,15 +3,20 @@
 > Atualize este arquivo ao fim de cada etapa. A seção **"Onde paramos"**
 > deve permitir que a próxima sessão continue exatamente daqui.
 
-## Onde paramos (2026-11-16)
+## Onde paramos (2026-11-17)
 
-- FASES 1 e 2 concluídas. FASE 3 em andamento: **fundação do backend pronta**
-  (38 testes passando + smoke test HTTP 9/9).
-- **Próxima ação — FASE 3, ai-service + NEXO AI Gateway** (branch `feat/ai-service-fundacao`):
-  1. `ai-service/` FastAPI com `ModelProvider` + `OllamaProvider` (config de modelos, remoção de `<think>`).
-  2. Endpoints `/health`, `/v1/chat`, `/v1/embed`; testes com pytest (provider falso + teste real opcional).
-  3. No backend: interface `NexoGateway`, implementação HTTP e erro tipado `AiUnavailable`.
-  4. Depois: tabelas de memória do NEXO com `vector(1024)` e dashboard React.
+- FASE 3: **ai-service e NEXO AI Gateway validados** com a IA real e com a IA fora do ar.
+  Backend: 81 testes; ai-service: 43 testes + 2 de integração com o Ollama real;
+  smoke test HTTP ponta a ponta: 15/15.
+- Definições do proprietário atendidas: exclusão de conta com retenção mínima e anônima
+  ([ADR-0006](docs/decisions/0006-retencao-e-exclusao-de-conta.md)), senha do PostgreSQL
+  rotacionada (48 caracteres, fora do Git) e ciclo de vida dos tokens de dispositivo
+  ([ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md)).
+- **Próxima ação — memória do NEXO (FASE 3)**, branch `feat/nexo-memoria`:
+  1. ADR de memória: o que é guardado, consentimento, retenção e exclusão.
+  2. Tabelas de conversas e memórias com `vector(1024)` + registro do modelo de embedding.
+  3. Contexto autorizado (rotina e objetivos) enviado ao NEXO com opt-in.
+  4. Depois: dashboard React (FASE 3, último item).
 
 ## FASE 1 — Diagnóstico e planejamento ✅
 - [x] Inspeção de hardware, SO e ferramentas ([diagnóstico](docs/diagnostics/2026-11-16-fase1.md))
@@ -42,12 +47,15 @@
 - [x] Rotinas (blocos recorrentes, inclusive atravessando a meia-noite) e objetivos — CRUD
 - [x] Auditoria de operações sensíveis (`audit_logs`)
 - [x] Banco de testes isolado (`procrastinar_menos_test`) com verificação automática
-- [ ] ai-service FastAPI com `ModelProvider` + `OllamaProvider` (+ remoção de `<think>`)
-- [ ] `NexoGateway` no backend + tratamento de indisponibilidade da IA
-- [ ] Tabelas de memória do NEXO + embeddings `vector(1024)`
+- [x] ai-service FastAPI em container: `ModelProvider` + `OllamaProvider`, persona versionada, remoção de `<think>`, auth serviço-a-serviço, limite de concorrência ([ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md))
+- [x] `NexoGateway` no backend: erros tipados (unavailable/timeout/busy/invalid_response/misconfigured), 503 + Retry-After, rate limit de 10/min, núcleo funcionando sem IA
+- [x] Exclusão de conta + política de retenção da auditoria ([retencao-de-dados.md](docs/security/retencao-de-dados.md))
+- [x] Tokens de dispositivo: expiração (90 dias), rotação pelo agente, reemissão pelo usuário, limpeza diária
+- [x] Container `pm-scheduler` para as tarefas agendadas
+- [ ] Memória do NEXO (conversas/memórias + embeddings `vector(1024)`) — com ADR de consentimento
 - [ ] Dashboard React (Vite + TS + Tailwind + shadcn/ui) com sistema visual base
-- [x] Testes fundamentais do backend (PHPUnit — 38 testes)
-- [ ] Testes do ai-service (pytest) e do dashboard (Vitest)
+- [x] Testes do backend (PHPUnit — 81 testes) e do ai-service (pytest — 43 + 2 de integração)
+- [ ] Testes do dashboard (Vitest)
 
 ## FASE 4 — Primeira versão funcional
 - [ ] Cadastro/login, perfil, onboarding em etapas
@@ -68,7 +76,10 @@
 - Licença do Docker Desktop deve ser revista antes de uso comercial.
 - `qwen3:4b` baixado mas não recomendado — decidir se remove.
 - PostgreSQL 16 nativo (outro projeto) escuta em `0.0.0.0:5432` — cabe ao proprietário avaliar.
-- Senha do banco local é curta; trocar por uma forte antes de guardar dados reais.
-- LGPD: definir retenção de `audit_logs` após exclusão de conta (hoje `user_id` vira NULL e o IP permanece).
-- Tokens de dispositivo não expiram; pareamento por código curto e rotação de tokens na FASE 5.
-- Fluxo de exclusão/exportação de conta ainda não implementado (FASE 4, painel "Meus dados").
+- ~~Senha do banco curta~~ → rotacionada em 2026-11-17.
+- ~~Retenção de `audit_logs`~~ → ADR-0006. Prazos de 90/365 dias a revisar juridicamente na FASE 6.
+- Pareamento de dispositivos por código curto: FASE 5.
+- Exportação de dados (portabilidade) ainda não implementada (FASE 4, painel "Meus dados").
+- Primeira mensagem após o modelo ficar ocioso leva ~25 s (carga na GPU); avaliar `keep_alive` maior ou pré-aquecimento.
+- `fastapi.testclient` emite aviso de depreciação (Starlette recomenda `httpx2`); acompanhar na próxima atualização de dependências.
+- Conversas com o NEXO ainda não são armazenadas (sem memória) — intencional até o ADR de memória.
