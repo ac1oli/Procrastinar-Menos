@@ -1,0 +1,26 @@
+# Imagem de desenvolvimento do backend Laravel (PHP 8.4 CLI).
+# O código-fonte é montado em /app pelo compose; a imagem contém só o runtime.
+
+FROM php:8.4-cli-bookworm
+
+COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && install-php-extensions pdo_pgsql pgsql intl bcmath zip pcntl opcache
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_HOME=/tmp/composer \
+    PHP_CLI_SERVER_WORKERS=4
+
+WORKDIR /app
+
+EXPOSE 8000
+
+# Servidor embutido do PHP com o roteador do Laravel. Não usamos
+# `php artisan serve` porque ele repassa ao processo filho só uma lista fixa
+# de variáveis de ambiente, descartando as DB_* injetadas pelo compose.
+# O roteador usa getcwd() como pasta pública, por isso o `cd public`.
+CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]

@@ -60,6 +60,15 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
         $ext = docker exec pm-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select extversion from pg_extension where extname=''vector''"' 2>$null
         Write-Check 'pgvector' ([bool]$ext) $(if ($ext) { "versão $ext" } else { 'extensão não instalada' })
     }
+
+    try {
+        $up = Invoke-WebRequest 'http://127.0.0.1:8000/up' -UseBasicParsing -TimeoutSec 5
+        # O roteador do PHP devolve 200 com HTML de aviso quando mal configurado.
+        $healthy = $up.StatusCode -eq 200 -and $up.Content -notmatch 'Warning|Fatal'
+        Write-Check 'Backend (pm-backend)' $healthy $(if ($healthy) { 'GET /up respondeu' } else { 'resposta inesperada em /up' })
+    } catch {
+        Write-Check 'Backend (pm-backend)' $false 'sem resposta em http://127.0.0.1:8000/up'
+    }
 }
 
 Write-Host "`n== Ollama ==" -ForegroundColor Cyan
