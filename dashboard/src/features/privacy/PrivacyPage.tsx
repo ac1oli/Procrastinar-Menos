@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { DownloadIcon } from 'lucide-react'
+import { DownloadIcon, PencilIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import { ApiError } from '@/api/client'
@@ -11,32 +11,214 @@ import type { DataExport } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/display'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Skeleton } from '@/components/ui/display'
 import { Field, Input, NativeSelect } from '@/components/ui/form-controls'
-import { useFormatDate } from '@/features/auth/session'
-import { retentionLabel, scopeInfo } from '@/lib/labels'
+import { useFormatDate, useMe } from '@/features/auth/session'
+import { ClearHistoryAction, ClearMemoriesAction, ImpactList } from '@/features/data/BulkActions'
+import { accountImpact, useDataSummary } from '@/features/data/impact'
+import { formatOffset, retentionLabel, scopeInfo } from '@/lib/labels'
 
 import { ConsentsCard } from './ConsentsCard'
 
-export function PrivacyPage() {
+/**
+ * Central "Meus dados" (FASE 4): o que a conta guarda, quem pode usar, por quanto tempo, e como
+ * exportar ou excluir. Reúne os cartões que já existiam (autorizações, retenção, exportação,
+ * decisões) com o inventário e as exclusões com prévia. Gerenciar cada item continua nas telas
+ * próprias (Histórico, Memórias, Rotina, Objetivos, Perfil), sem duplicar funções.
+ */
+export function MyDataPage() {
+  const sections = [
+    ['conta', 'Conta'],
+    ['inventario', 'O que está guardado'],
+    ['autorizacoes', 'Autorizações'],
+    ['retencao', 'Retenção'],
+    ['exportar', 'Exportar'],
+    ['excluir', 'Excluir'],
+    ['decisoes', 'Decisões'],
+  ] as const
   return (
     <>
       <PageHeader
-        title="Privacidade e dados"
-        description="Você controla o que o NEXO guarda e usa, por quanto tempo, e pode exportar ou excluir tudo. Tudo roda no seu servidor."
+        title="Meus dados"
+        description="Tudo o que a sua conta guarda, quem pode usar, por quanto tempo, e como exportar ou excluir. Tudo roda no seu servidor."
       />
+      <nav aria-label="Seções de Meus dados" className="-mt-2 mb-6 flex flex-wrap gap-2">
+        {sections.map(([id, label]) => (
+          <a key={id} href={`#${id}`} className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+            {label}
+          </a>
+        ))}
+      </nav>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="grid content-start gap-6">
-          <ConsentsCard />
-          <ConsentHistoryCard />
+          <section id="conta" className="scroll-mt-20">
+            <AccountCard />
+          </section>
+          <section id="inventario" className="scroll-mt-20">
+            <InventoryCard />
+          </section>
+          <section id="autorizacoes" className="scroll-mt-20">
+            <ConsentsCard />
+          </section>
+          <section id="decisoes" className="scroll-mt-20">
+            <ConsentHistoryCard />
+          </section>
         </div>
         <div className="grid content-start gap-6">
-          <RetentionCard />
-          <ExportCard />
-          <DeleteAccountCard />
+          <section id="retencao" className="scroll-mt-20">
+            <RetentionCard />
+          </section>
+          <section id="exportar" className="scroll-mt-20">
+            <ExportCard />
+          </section>
+          <section id="excluir" className="scroll-mt-20">
+            <DeletionCard />
+          </section>
         </div>
       </div>
     </>
+  )
+}
+
+function AccountCard() {
+  const { data: me } = useMe()
+  const formatDate = useFormatDate()
+  if (!me) return null
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Conta</CardTitle>
+        <CardDescription>Só o necessário para entrar e para o NEXO saber o seu horário. Nenhum outro dado pessoal é pedido.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted-foreground">Nome de exibição</dt>
+            <dd className="font-medium">{me.name}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">E-mail de acesso</dt>
+            <dd className="font-medium break-all">{me.email}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Fuso horário</dt>
+            <dd className="font-medium">
+              {me.timezone} ({formatOffset(me.timezone_details.offset)})
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Conta criada em</dt>
+            <dd className="font-medium">{formatDate(me.created_at)}</dd>
+          </div>
+        </dl>
+        <Button asChild variant="outline" className="justify-self-start">
+          <Link to="/perfil">
+            <PencilIcon /> Editar perfil, e-mail ou senha
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function InventoryCard() {
+  const summary = useDataSummary()
+  const formatDate = useFormatDate()
+  const s = summary.data
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>O que está guardado</CardTitle>
+        <CardDescription>Contagens atuais. Cada item é gerenciado na própria tela.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {summary.isPending ? (
+          <Skeleton className="h-40" />
+        ) : summary.isError || !s ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(summary.error)}
+          </p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2" aria-label="Inventário dos dados">
+            <InventoryItem
+              title="Conversas guardadas"
+              value={`${s.conversations.count} conversa(s), ${s.conversations.messages} mensagem(ns)`}
+              detail={`Prazo: ${retentionLabel(s.conversations.retention_days)}${s.conversations.oldest_at ? `; a mais antiga é de ${formatDate(s.conversations.oldest_at)}` : ''}.`}
+              to="/historico"
+              action="Abrir histórico"
+            />
+            <InventoryItem
+              title="Memórias"
+              value={`${s.memories.count} memória(s)`}
+              detail={`${s.memories.active} ativa(s) · ${s.memories.needs_review} para revisar · ${s.memories.archived} arquivada(s) · ${s.memories.pinned} fixada(s) · ${s.memories.sensitive} sensível(is)`}
+              to="/memorias"
+              action="Gerenciar memórias"
+            />
+            <InventoryItem
+              title="Sugestões pendentes"
+              value={`${s.suggestions.pending} sugestão(ões)`}
+              detail="Só viram memória com a sua confirmação; expiram em 14 dias."
+              to="/memorias?aba=sugestoes"
+              action="Revisar sugestões"
+            />
+            <InventoryItem
+              title="Rotina e objetivos"
+              value={`${s.planning.routine_blocks} bloco(s) · ${s.planning.goals} objetivo(s)`}
+              detail={`${s.planning.goals_active} objetivo(s) ativo(s).`}
+              to="/rotina"
+              action="Abrir rotina"
+            />
+            <InventoryItem
+              title="Dispositivos"
+              value={`${s.devices.active} ativo(s) · ${s.devices.revoked} revogado(s)`}
+              detail="A gestão de dispositivos chega com os agentes de computador e celular."
+            />
+            <InventoryItem
+              title="Registro de segurança"
+              value={`${s.security_log.events} evento(s)`}
+              detail={`Entradas, saídas e mudanças de conta, sem conteúdo. O IP some em ${s.security_log.ip_retention_days} dias; o registro, em ${s.security_log.retention_days}.`}
+            />
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function InventoryItem({ title, value, detail, to, action }: { title: string; value: string; detail: string; to?: string; action?: string }) {
+  return (
+    <li className="grid content-start gap-1 rounded-lg border p-3">
+      <p className="text-xs text-muted-foreground">{title}</p>
+      <p className="font-medium">{value}</p>
+      <p className="text-xs text-muted-foreground">{detail}</p>
+      {to && action && (
+        <Link to={to} className="mt-1 text-sm text-primary underline-offset-4 hover:underline">
+          {action}
+        </Link>
+      )}
+    </li>
+  )
+}
+
+function DeletionCard() {
+  return (
+    <Card className="border-destructive/30">
+      <CardHeader>
+        <CardTitle>Excluir dados</CardTitle>
+        <CardDescription>
+          Antes de confirmar, cada ação mostra exatamente o que será apagado e o que continua. Para apagar itens soltos, use as telas de Histórico
+          e Memórias.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="flex flex-wrap gap-2">
+          <ClearHistoryAction />
+          <ClearMemoriesAction variant="outline" />
+        </div>
+        <DeleteAccount />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -177,7 +359,7 @@ function ExportCard() {
       <CardHeader>
         <CardTitle>Exportar meus dados</CardTitle>
         <CardDescription>
-          Pacote ZIP com conversas, memórias, sugestões e autorizações (JSON e versão legível). Uma vez a cada 24 h; o link vale para um único download.
+          Pacote ZIP com perfil, rotina, objetivos, dispositivos (sem credenciais), conversas, memórias, sugestões e autorizações, em JSON e versão legível. Uma vez a cada 24 h; o link vale para um único download.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
@@ -223,8 +405,10 @@ function ExportCard() {
   )
 }
 
-function DeleteAccountCard() {
+function DeleteAccount() {
   const [open, setOpen] = useState(false)
+  const summary = useDataSummary(open)
+  const impact = summary.data && accountImpact(summary.data)
   const [password, setPassword] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -241,16 +425,13 @@ function DeleteAccountCard() {
   const error = remove.error instanceof ApiError ? remove.error : undefined
 
   return (
-    <Card className="border-destructive/30">
-      <CardHeader>
-        <CardTitle>Excluir conta</CardTitle>
-        <CardDescription>Apaga perfil, rotina, objetivos, dispositivos, conversas, memórias e autorizações. Irreversível.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button variant="destructive" onClick={() => setOpen(true)}>
-          Excluir minha conta
-        </Button>
-      </CardContent>
+    <div className="grid gap-2 border-t pt-4">
+      <p className="text-sm text-muted-foreground">
+        Excluir a conta apaga tudo de uma vez. Se quiser uma cópia, exporte antes: o pacote não pode ser pedido depois.
+      </p>
+      <Button variant="destructive" className="justify-self-start" onClick={() => setOpen(true)}>
+        Excluir minha conta
+      </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={(o) => {
@@ -258,16 +439,16 @@ function DeleteAccountCard() {
           if (!o) setPassword('')
         }}
         title="Excluir a conta definitivamente?"
-        description="Todos os seus dados serão excluídos. Ficam apenas registros de segurança anônimos, sem nada que identifique você."
+        description={<ImpactList loading={!impact} removed={impact?.removed ?? []} kept={impact?.kept} />}
         confirmLabel="Excluir conta"
         pending={remove.isPending}
-        confirmDisabled={!password}
+        confirmDisabled={!password || !impact}
         onConfirm={() => remove.mutate()}
       >
         <Field label="Confirme sua senha" htmlFor="delete-password" error={error?.field('password') ?? (remove.isError && !error?.field('password') ? errorMessage(remove.error) : undefined)}>
           <Input id="delete-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
       </ConfirmDialog>
-    </Card>
+    </div>
   )
 }

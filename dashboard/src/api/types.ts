@@ -185,3 +185,15 @@ export interface Goal {
 }
 
 export type GoalInput = { title: string; type: GoalType; description?: string | null; status?: GoalStatus; target_date?: string | null }
+
+/** Inventário da conta (só contagens e datas), para a central "Meus dados". */
+export interface DataSummary {
+  conversations: { count: number; messages: number; oldest_at: string | null; retention_days: number | null }
+  memories: { count: number; active: number; needs_review: number; archived: number; pinned: number; sensitive: number; from_conversations: number }
+  suggestions: { pending: number }
+  planning: { routine_blocks: number; goals: number; goals_active: number }
+  devices: { active: number; revoked: number }
+  consents: { granted: number; denied: number; events: number }
+  security_log: { events: number; kept_anonymized_on_deletion: number; retention_days: number; ip_retention_days: number }
+  last_export: { status: string; created_at: string } | null
+}

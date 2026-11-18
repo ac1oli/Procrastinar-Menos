@@ -199,6 +199,35 @@ export const handlers = [
   })),
   http.get('/api/me', guard(() => ok({ data: db.user }))),
   http.get('/api/timezones', guard(() => ok({ data: Object.keys(zoneDetails) }))),
+  http.get('/api/me/data-summary', guard(() => {
+    const count = (status: string) => db.memories.filter((m) => m.status === status).length
+    const decided = Object.values(db.consents).filter((v) => v !== null)
+    return ok({
+      data: {
+        conversations: {
+          count: db.conversations.length,
+          messages: db.conversations.reduce((n, c) => n + c.messages.length, 0),
+          oldest_at: db.conversations[0]?.last_message_at ?? null,
+          retention_days: db.retention,
+        },
+        memories: {
+          count: db.memories.length,
+          active: count('active'),
+          needs_review: count('needs_review'),
+          archived: count('archived'),
+          pinned: db.memories.filter((m) => m.pinned).length,
+          sensitive: db.memories.filter((m) => m.sensitivity === 'sensitive').length,
+          from_conversations: db.memories.filter((m) => m.source.conversation_id).length,
+        },
+        suggestions: { pending: db.suggestions.length },
+        planning: { routine_blocks: db.routine.length, goals: db.goals.length, goals_active: db.goals.filter((g) => g.status === 'active').length },
+        devices: { active: 0, revoked: 0 },
+        consents: { granted: decided.filter(Boolean).length, denied: decided.filter((v) => !v).length, events: decided.length },
+        security_log: { events: 4, kept_anonymized_on_deletion: 2, retention_days: 365, ip_retention_days: 90 },
+        last_export: null,
+      },
+    })
+  })),
   http.patch('/api/me', guard(({ body }) => {
     const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : undefined
     if (body.name !== undefined && !name) return invalid('name', 'Informe um nome de exibição.')

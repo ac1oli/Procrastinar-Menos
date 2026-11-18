@@ -1,6 +1,6 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import { lazy, Suspense, useEffect, type ComponentType } from 'react'
-import { BrowserRouter, MemoryRouter, useRoutes, type RouteObject } from 'react-router'
+import { BrowserRouter, MemoryRouter, Navigate, type RouteObject, useRoutes } from 'react-router'
 import { Toaster } from 'sonner'
 
 import { onUnauthorized } from '@/api/client'
@@ -25,7 +25,7 @@ const MemoriesPage = page(() => import('@/features/memories/MemoriesPage'), 'Mem
 const OnboardingPage = page(() => import('@/features/onboarding/OnboardingPage'), 'OnboardingPage')
 const GoalsPage = page(() => import('@/features/planning/GoalsPage'), 'GoalsPage')
 const RoutinePage = page(() => import('@/features/planning/RoutinePage'), 'RoutinePage')
-const PrivacyPage = page(() => import('@/features/privacy/PrivacyPage'), 'PrivacyPage')
+const MyDataPage = page(() => import('@/features/privacy/PrivacyPage'), 'MyDataPage')
 const ProfilePage = page(() => import('@/features/profile/ProfilePage'), 'ProfilePage')
 
 export const routes: RouteObject[] = [
@@ -49,7 +49,9 @@ export const routes: RouteObject[] = [
       { path: 'memorias', element: <MemoriesPage /> },
       { path: 'rotina', element: <RoutinePage /> },
       { path: 'objetivos', element: <GoalsPage /> },
-      { path: 'privacidade', element: <PrivacyPage /> },
+      { path: 'meus-dados', element: <MyDataPage /> },
+      // Endereço antigo (FASE 3): a central "Meus dados" substituiu a página Privacidade.
+      { path: 'privacidade', element: <Navigate to="/meus-dados" replace /> },
       { path: 'perfil', element: <ProfilePage /> },
       { path: '*', element: <p className="text-muted-foreground">Página não encontrada.</p> },
     ],

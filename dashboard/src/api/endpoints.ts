@@ -9,6 +9,7 @@ import type {
   Data,
   DataAction,
   DataExport,
+  DataSummary,
   Goal,
   GoalInput,
   Memory,
@@ -41,6 +42,10 @@ export const auth = {
   },
   logout: () => api<void>('/auth/logout', { method: 'POST' }),
   deleteAccount: (password: string) => api<void>('/me', { method: 'DELETE', body: { password } }),
+}
+
+export const myData = {
+  summary: () => data(api<Data<DataSummary>>('/me/data-summary')),
 }
 
 export const profile = {

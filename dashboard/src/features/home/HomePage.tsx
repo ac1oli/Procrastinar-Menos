@@ -173,7 +173,7 @@ export function HomePage() {
             <CardDescription>Suas autorizações atuais.</CardDescription>
             <CardAction>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/privacidade">
+                <Link to="/meus-dados">
                   Ajustar <ArrowRightIcon />
                 </Link>
               </Button>

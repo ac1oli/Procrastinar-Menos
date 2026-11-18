@@ -47,7 +47,7 @@ const nav = [
   { to: '/memorias', label: 'Memórias', icon: BrainIcon, badge: 'suggestions' as const },
   { to: '/rotina', label: 'Rotina', icon: CalendarClockIcon },
   { to: '/objetivos', label: 'Objetivos', icon: TargetIcon },
-  { to: '/privacidade', label: 'Privacidade', icon: ShieldCheckIcon },
+  { to: '/meus-dados', label: 'Meus dados', icon: ShieldCheckIcon },
 ]
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {

@@ -6,6 +6,7 @@ export const keys = {
   me: ['me'] as const,
   consents: ['consents'] as const,
   timezones: ['timezones'] as const,
+  dataSummary: ['data-summary'] as const,
   consentHistory: ['consents', 'history'] as const,
   status: ['nexo', 'status'] as const,
   conversations: (q = '') => ['conversations', q] as const,
