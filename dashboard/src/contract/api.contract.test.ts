@@ -9,7 +9,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { ApiError } from '@/api/client'
-import { auth, consents, conversations, exports, goals, memories, nexo, preferences, profile, routine, suggestions } from '@/api/endpoints'
+import { auth, consents, conversations, exports, goals, memories, myData, nexo, preferences, profile, routine, suggestions } from '@/api/endpoints'
 import type { ConsentScopeId } from '@/api/types'
 import { todayIso } from '@/lib/labels'
 
@@ -127,6 +127,15 @@ describe('contrato dashboard ↔ backend real', () => {
     for (const s of pending) expect(s.source.conversation_id).toBe(conversationId)
     if (pending[0]) expect((await suggestions.accept(pending[0].id)).origin).toBe('suggestion_confirmed')
     if (pending[1]) await suggestions.reject(pending[1].id)
+  })
+
+  it('Meus dados: inventário só com contagens da própria conta', async () => {
+    const summary = await myData.summary()
+    expect(summary.conversations.count).toBeGreaterThanOrEqual(1)
+    expect(summary.memories.count).toBeGreaterThanOrEqual(1)
+    expect(summary.planning).toMatchObject({ routine_blocks: 1, goals: 1, goals_active: 1 })
+    expect(summary.security_log.retention_days).toBe(365)
+    expect(JSON.stringify(summary)).not.toContain('Python')
   })
 
   it('privacidade: retenção com prévia, revogação exige escolha, exportação de uso único', async () => {

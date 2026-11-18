@@ -250,3 +250,56 @@ test.describe('perfil e fuso', () => {
     await context.close()
   })
 })
+
+test.describe('Meus dados', () => {
+  test('inventário real, exclusão com prévia e exportação com perfil, rotina e objetivos', async ({ browser }) => {
+    const { context, page } = await newAccount(browser, currentBaseURL(), 'Pessoa Dados', ['Memória de longo prazo'])
+
+    await page.goto('/objetivos')
+    await page.getByRole('button', { name: /Novo objetivo/ }).click()
+    await page.getByRole('dialog').getByLabel('Título').fill('Objetivo fictício de dados')
+    await page.getByRole('dialog').getByRole('button', { name: 'Salvar' }).click()
+    await page.goto('/memorias')
+    await page.getByRole('button', { name: /Nova memória/ }).click()
+    await page.getByRole('dialog').getByRole('textbox', { name: 'Memória' }).fill('Memória fictícia para o inventário.')
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar memória' }).click()
+    await expect(page.getByTestId('memory-card')).toHaveCount(1)
+
+    await page.goto('/privacidade') // endereço antigo
+    await expect(page).toHaveURL(/\/meus-dados$/)
+    const inventory = page.getByRole('list', { name: 'Inventário dos dados' })
+    await expect(inventory).toContainText('1 memória(s)')
+    await expect(inventory).toContainText('0 bloco(s) · 1 objetivo(s)')
+
+    await page.getByRole('button', { name: /Excluir todas as memórias/ }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByTestId('impact')).toContainText('1 memória(s): 1 ativa(s)')
+    await dialog.getByRole('button', { name: 'Excluir todas' }).click()
+    await expect(inventory).toContainText('0 memória(s)')
+
+    await page.getByLabel('Confirme sua senha').first().fill(password)
+    await page.getByRole('button', { name: 'Pedir exportação' }).click()
+    const download = page.getByRole('button', { name: /Baixar pacote/ })
+    await expect(download).toBeVisible({ timeout: 60_000 })
+    const [file] = await Promise.all([page.waitForEvent('download'), download.click()])
+    const bytes = await streamToBuffer(await file.createReadStream())
+    for (const name of ['conta/perfil.json', 'planejamento/objetivos.json', 'planejamento/rotina.json', 'dispositivos/dispositivos.json', 'nexo/memorias.json']) {
+      expect(bytes.includes(Buffer.from(name)), name).toBe(true) // nomes ficam legíveis no índice do ZIP
+    }
+    await file.delete()
+
+    await page.getByRole('button', { name: 'Excluir minha conta' }).click()
+    const deletion = page.getByRole('dialog')
+    await expect(deletion.getByTestId('impact')).toContainText('0 bloco(s) de rotina e 1 objetivo(s)')
+    await deletion.getByLabel('Confirme sua senha').fill(password)
+    await deletion.getByRole('button', { name: 'Excluir conta' }).click()
+    await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
+    await context.close()
+  })
+})
+
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  return Buffer.concat(chunks)
+}
