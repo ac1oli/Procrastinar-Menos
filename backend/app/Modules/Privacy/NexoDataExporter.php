@@ -8,17 +8,21 @@ use App\Modules\Consent\Models\ConsentEvent;
 use App\Modules\Conversations\Models\Conversation;
 use App\Modules\Conversations\Models\ConversationMessage;
 use App\Modules\Conversations\Models\NexoPreference;
+use App\Modules\Devices\Models\Device;
+use App\Modules\Goals\Models\Goal;
 use App\Modules\Memory\Models\Memory;
 use App\Modules\Memory\Models\MemorySuggestion;
+use App\Modules\Routine\Models\RoutineBlock;
 use RuntimeException;
 use ZipArchive;
 
 /**
- * Monta o pacote de portabilidade dos dados do NEXO (LGPD art. 18, V).
+ * Monta o pacote de portabilidade dos dados da conta (LGPD art. 18, V): perfil, rotina,
+ * objetivos, dispositivos e tudo do NEXO.
  *
- * JSON para máquinas + Markdown legível. Embeddings não entram: são cálculos
- * derivados do texto, que já está no pacote. Deve rodar com o escopo do
- * usuário definido (RLS).
+ * JSON para máquinas + Markdown legível. Não entram: senha (hash), tokens de dispositivo,
+ * embeddings (cálculos derivados do texto, que já está no pacote) e auditoria.
+ * Deve rodar com o escopo do usuário definido (RLS).
  */
 final class NexoDataExporter
 {
@@ -28,6 +32,24 @@ final class NexoDataExporter
         $iso = fn ($date) => $date?->toIso8601String();
 
         return [
+            'account' => [
+                'name' => $user->name, 'email' => $user->email, 'timezone' => $user->timezone,
+                'created_at' => $iso($user->created_at), 'updated_at' => $iso($user->updated_at),
+            ],
+            'routine_blocks' => RoutineBlock::ownedBy($user)->orderBy('start_time')->get()->map(fn (RoutineBlock $b) => [
+                'title' => $b->title, 'category' => $b->category->value, 'days_of_week' => $b->days_of_week,
+                'start_time' => substr((string) $b->start_time, 0, 5), 'end_time' => substr((string) $b->end_time, 0, 5),
+                'notes' => $b->notes, 'is_active' => $b->is_active, 'created_at' => $iso($b->created_at),
+            ])->all(),
+            'goals' => Goal::ownedBy($user)->orderBy('created_at')->get()->map(fn (Goal $g) => [
+                'title' => $g->title, 'description' => $g->description, 'type' => $g->type->value,
+                'status' => $g->status->value, 'target_date' => $g->target_date?->toDateString(), 'created_at' => $iso($g->created_at),
+            ])->all(),
+            // Sem tokens nem datas de expiração de credencial.
+            'devices' => Device::ownedBy($user)->orderBy('created_at')->get()->map(fn (Device $d) => [
+                'name' => $d->name, 'platform' => $d->platform->value, 'monitoring_enabled' => $d->monitoring_enabled,
+                'created_at' => $iso($d->created_at), 'last_seen_at' => $iso($d->last_seen_at), 'revoked_at' => $iso($d->revoked_at),
+            ])->all(),
             'consents' => [
                 'current' => Consent::ownedBy($user)->get()->map(fn (Consent $c) => [
                     'scope' => $c->scope->value, 'granted' => $c->granted,
@@ -78,6 +100,10 @@ final class NexoDataExporter
 
             $json = fn ($value) => json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $zip->addFromString('LEIAME.md', $this->readme());
+            $zip->addFromString('conta/perfil.json', $json($data['account']));
+            $zip->addFromString('planejamento/rotina.json', $json($data['routine_blocks']));
+            $zip->addFromString('planejamento/objetivos.json', $json($data['goals']));
+            $zip->addFromString('dispositivos/dispositivos.json', $json($data['devices']));
             $zip->addFromString('nexo/consentimentos.json', $json($data['consents']));
             $zip->addFromString('nexo/preferencias.json', $json($data['preferences']));
             $zip->addFromString('nexo/conversas.json', $json($data['conversations']));
@@ -95,10 +121,13 @@ final class NexoDataExporter
     private function readme(): string
     {
         return <<<'MD'
-        # Seus dados do NEXO — Procrastinar Menos
+        # Seus dados — Procrastinar Menos
 
         Gerado a pedido seu. Este arquivo é pessoal: guarde-o com cuidado.
 
+        - `conta/perfil.json`: nome de exibição, e-mail, fuso horário e datas da conta.
+        - `planejamento/rotina.json` e `planejamento/objetivos.json`: blocos de rotina e objetivos.
+        - `dispositivos/dispositivos.json`: dispositivos vinculados (sem tokens).
         - `nexo/consentimentos.json`: autorizações atuais e o histórico de decisões, com a versão do texto aceito.
         - `nexo/preferencias.json`: prazo de retenção do histórico.
         - `nexo/conversas.json`: conversas guardadas. Dados como CPF, cartões, e-mails e senhas foram mascarados
@@ -106,8 +135,8 @@ final class NexoDataExporter
         - `nexo/memorias.json` e `nexo/memorias.md`: memórias de longo prazo com origem, evidência, confiança e datas.
         - `nexo/sugestoes_pendentes.json`: sugestões do NEXO ainda não confirmadas.
 
-        Não incluídos: embeddings (cálculos derivados do texto, que já está aqui) e registros de auditoria.
-        Perfil, rotina, objetivos e dispositivos entram no painel "Meus dados" (FASE 4).
+        Não incluídos: senha, tokens de dispositivo, embeddings (cálculos derivados do texto, que já está aqui)
+        e registros de auditoria.
         MD;
     }
 

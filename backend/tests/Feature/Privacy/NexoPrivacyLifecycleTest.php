@@ -86,6 +86,8 @@ class NexoPrivacyLifecycleTest extends TestCase
     public function test_export_contains_all_nexo_data_without_vectors_and_is_single_use(): void
     {
         $this->populate($this->user, export: false);
+        $this->postJson('/api/routine-blocks', ['title' => 'Estudo fictício', 'category' => 'study', 'days_of_week' => [1], 'start_time' => '07:00', 'end_time' => '08:00'])->assertCreated();
+        $this->postJson('/api/goals', ['title' => 'Objetivo fictício', 'type' => 'learning', 'target_date' => '2026-12-01'])->assertCreated();
 
         $id = $this->signedIn($this->user)->postJson('/api/me/exports', ['password' => self::PASSWORD])
             ->assertAccepted()->json('data.id');
@@ -99,9 +101,19 @@ class NexoPrivacyLifecycleTest extends TestCase
         $files = $this->unzip($response->getContent());
 
         $this->assertEqualsCanonicalizing([
-            'LEIAME.md', 'nexo/consentimentos.json', 'nexo/preferencias.json', 'nexo/conversas.json',
+            'LEIAME.md', 'conta/perfil.json', 'planejamento/rotina.json', 'planejamento/objetivos.json',
+            'dispositivos/dispositivos.json', 'nexo/consentimentos.json', 'nexo/preferencias.json', 'nexo/conversas.json',
             'nexo/memorias.json', 'nexo/sugestoes_pendentes.json', 'nexo/memorias.md',
         ], array_keys($files));
+        $account = json_decode($files['conta/perfil.json'], true);
+        $this->assertSame([$this->user->name, $this->user->email, $this->user->timezone], [$account['name'], $account['email'], $account['timezone']]);
+        $this->assertSame('Estudo fictício', json_decode($files['planejamento/rotina.json'], true)[0]['title']);
+        $this->assertSame('2026-12-01', json_decode($files['planejamento/objetivos.json'], true)[0]['target_date']);
+        // Os dados (o LEIAME só explica o que ficou de fora).
+        foreach (array_filter($files, fn ($name) => str_ends_with($name, '.json'), ARRAY_FILTER_USE_KEY) as $name => $content) {
+            $this->assertStringNotContainsString('password', $content, "{$name} não pode ter senha");
+            $this->assertStringNotContainsString('token', $content, "{$name} não pode ter token");
+        }
         $memories = json_decode($files['nexo/memorias.json'], true);
         $this->assertSame('Prefere estudar Python de manhã.', $memories[0]['content']);
         $this->assertSame('declarada', $memories[0]['evidence_level']);
@@ -113,6 +125,51 @@ class NexoPrivacyLifecycleTest extends TestCase
 
         $this->get("/api/me/exports/{$id}/download")->assertGone();
         $this->assertSame([], Storage::disk('local')->allFiles('exports'));
+    }
+
+    public function test_data_summary_counts_only_the_own_account_and_never_content(): void
+    {
+        $other = User::factory()->create(['password' => self::PASSWORD]);
+        $this->populate($other, export: false);
+        $this->postJson('/api/nexo/memories', ['kind' => 'preferencia', 'content' => 'Memória extra da outra conta.'])->assertCreated();
+
+        $this->populate($this->user, export: false);
+        $summary = $this->signedIn($this->user)->getJson('/api/me/data-summary')->assertOk()->json('data');
+
+        $this->assertSame(['count' => 1, 'messages' => 2, 'retention_days' => 30], array_intersect_key($summary['conversations'], array_flip(['count', 'messages', 'retention_days'])));
+        $this->assertSame(1, $summary['memories']['count']); // a outra conta tem 2
+        $this->assertSame(1, $summary['suggestions']['pending']);
+        $this->assertSame(3, $summary['consents']['granted']);
+        $this->assertGreaterThan(0, $summary['security_log']['events']);
+        $this->assertSame(365, $summary['security_log']['retention_days']);
+        $this->assertStringNotContainsString('Python', json_encode($summary));
+        $this->assertStringNotContainsString('Memória extra', json_encode($summary));
+    }
+
+    public function test_data_summary_matches_what_each_bulk_deletion_really_affects(): void
+    {
+        $this->populate($this->user, export: false);
+        $this->asDatabaseUser($this->user, fn () => Memory::query()->update(['source_conversation_id' => Conversation::query()->value('id')]));
+        $summary = fn () => $this->getJson('/api/me/data-summary')->json('data');
+        $this->assertSame([1, 1, 1], [$summary()['conversations']['count'], $summary()['memories']['from_conversations'], $summary()['suggestions']['pending']]);
+
+        // Apagar o histórico: some a conversa e a sugestão nascida dela; a memória fica, sem o vínculo.
+        $this->deleteJson('/api/nexo/conversations', ['confirm' => true])->assertOk();
+        $after = $summary();
+        $this->assertSame([0, 0, 0, 1, 0], [
+            $after['conversations']['count'], $after['conversations']['messages'], $after['suggestions']['pending'],
+            $after['memories']['count'], $after['memories']['from_conversations'],
+        ]);
+
+        // Apagar as memórias: somem com os índices semânticos.
+        $this->deleteJson('/api/nexo/memories', ['confirm' => true])->assertOk();
+        $this->assertSame(0, $summary()['memories']['count']);
+        $this->assertSame(0, $this->rowsFor($this->user, MemoryEmbedding::class));
+    }
+
+    public function test_data_summary_requires_session(): void
+    {
+        $this->getJson('/api/me/data-summary')->assertUnauthorized();
     }
 
     public function test_exports_of_another_account_are_not_found(): void

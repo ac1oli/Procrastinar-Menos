@@ -12,6 +12,7 @@ use App\Modules\Memory\Http\Controllers\MemoryController;
 use App\Modules\Memory\Http\Controllers\MemorySuggestionController;
 use App\Modules\Nexo\Http\Controllers\NexoController;
 use App\Modules\Privacy\Http\Controllers\DataExportController;
+use App\Modules\Privacy\Http\Controllers\DataSummaryController;
 use App\Modules\Routine\Http\Controllers\RoutineBlockController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,7 @@ Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () 
     Route::put('me/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:auth');
     Route::get('timezones', [ProfileController::class, 'timezones']);
     Route::delete('me', [AuthController::class, 'destroy'])->middleware('throttle:auth');
+    Route::get('me/data-summary', DataSummaryController::class);
     Route::post('me/exports', [DataExportController::class, 'store'])->middleware('throttle:auth');
     Route::get('me/exports/{export}', [DataExportController::class, 'show']);
     Route::get('me/exports/{export}/download', [DataExportController::class, 'download']);
