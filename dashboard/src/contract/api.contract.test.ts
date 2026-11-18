@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Contrato do dashboard com o backend REAL (isolado) e a IA real.
  *
