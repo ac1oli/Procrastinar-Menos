@@ -24,8 +24,8 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Badge, Card, CardContent, EmptyState, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/display'
 import { Input, NativeSelect } from '@/components/ui/form-controls'
-import { useConsents } from '@/features/auth/session'
-import { confidenceLabel, evidenceLabel, formatDate, kindLabel, originLabel, statusLabel } from '@/lib/labels'
+import { useConsents, useFormatDate } from '@/features/auth/session'
+import { confidenceLabel, evidenceLabel, kindLabel, originLabel, statusLabel } from '@/lib/labels'
 
 import { MemoryForm } from './MemoryForm'
 
@@ -236,6 +236,7 @@ function MemoryCard({
   onEdit: () => void
   onAction: (action: 'archive' | 'restore' | 'review' | 'pin' | 'unpin' | 'remove') => void
 }) {
+  const formatDate = useFormatDate()
   return (
     <Card className="h-full gap-3" data-testid="memory-card">
       <CardContent className="grid gap-3">
@@ -296,6 +297,7 @@ function MemoryCard({
 }
 
 function SuggestionList() {
+  const formatDate = useFormatDate()
   const queryClient = useQueryClient()
   const list = useQuery({ queryKey: keys.suggestions, queryFn: suggestionsApi.list })
   const [editing, setEditing] = useState<MemorySuggestion | null>(null)

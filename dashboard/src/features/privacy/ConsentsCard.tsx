@@ -8,8 +8,8 @@ import type { ConsentScope, DataAction } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@/components/ui/display'
 import { Checkbox, Label, RadioGroup, RadioGroupItem, Switch } from '@/components/ui/form-controls'
-import { useConsents } from '@/features/auth/session'
-import { formatDate, scopeInfo } from '@/lib/labels'
+import { useConsents, useFormatDate } from '@/features/auth/session'
+import { scopeInfo } from '@/lib/labels'
 
 type Pending = { scope: ConsentScope; grant: boolean }
 
@@ -19,6 +19,7 @@ type Pending = { scope: ConsentScope; grant: boolean }
  * "manter inativo"; excluir só acontece com a confirmação marcada.
  */
 export function ConsentsCard() {
+  const formatDate = useFormatDate()
   const consents = useConsents()
   const queryClient = useQueryClient()
   const [pending, setPending] = useState<Pending | null>(null)

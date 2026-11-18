@@ -128,9 +128,25 @@ export function retentionLabel(days: number | null): string {
   return days === null ? 'Até eu excluir' : `${days} dias`
 }
 
-export function formatDate(iso: string | null | undefined, withTime = false): string {
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * Data em pt-BR no fuso da conta (o mesmo que o NEXO usa); sem fuso, o do navegador.
+ * Datas sem hora ("2026-12-01", como prazos) são dias de calendário: nunca mudam de dia
+ * por causa do fuso (antes, no Brasil, apareciam como o dia anterior).
+ */
+export function formatDate(iso: string | null | undefined, withTime = false, timeZone?: string): string {
   if (!iso) return '—'
-  return new Intl.DateTimeFormat('pt-BR', withTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'medium' }).format(new Date(iso))
+  if (DATE_ONLY.test(iso)) {
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`))
+  }
+  const options: Intl.DateTimeFormatOptions = withTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'medium' }
+  return new Intl.DateTimeFormat('pt-BR', { ...options, timeZone }).format(new Date(iso))
+}
+
+/** "-03:00" → "UTC−03:00" */
+export function formatOffset(offset: string): string {
+  return `UTC${offset.replace('-', '−')}`
 }
 
 /** Dia ISO de hoje no fuso da pessoa (o mesmo critério do backend). */

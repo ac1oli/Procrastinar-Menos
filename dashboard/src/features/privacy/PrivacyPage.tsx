@@ -13,7 +13,8 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/display'
 import { Field, Input, NativeSelect } from '@/components/ui/form-controls'
-import { formatDate, retentionLabel, scopeInfo } from '@/lib/labels'
+import { useFormatDate } from '@/features/auth/session'
+import { retentionLabel, scopeInfo } from '@/lib/labels'
 
 import { ConsentsCard } from './ConsentsCard'
 
@@ -104,6 +105,7 @@ function RetentionCard() {
 }
 
 function ConsentHistoryCard() {
+  const formatDate = useFormatDate()
   const history = useQuery({ queryKey: keys.consentHistory, queryFn: consents.history })
   const actionLabel = { granted: 'Permitido', revoked: 'Revogado', declined: 'Não permitido' } as const
 
@@ -135,6 +137,7 @@ function ConsentHistoryCard() {
 }
 
 function ExportCard() {
+  const formatDate = useFormatDate()
   const [password, setPassword] = useState('')
   const [current, setCurrent] = useState<DataExport | null>(null)
 

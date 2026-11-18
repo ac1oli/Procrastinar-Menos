@@ -12,11 +12,11 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Badge, Card, CardContent, EmptyState, Skeleton } from '@/components/ui/display'
 import { Checkbox, Input, Label } from '@/components/ui/form-controls'
-import { useConsents } from '@/features/auth/session'
-import { formatDate } from '@/lib/labels'
+import { useConsents, useFormatDate } from '@/features/auth/session'
 import { cn } from '@/lib/utils'
 
 export function HistoryPage() {
+  const formatDate = useFormatDate()
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const clearAll = useConfirm()
@@ -120,6 +120,7 @@ export function HistoryPage() {
 }
 
 export function ConversationPage() {
+  const formatDate = useFormatDate()
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
