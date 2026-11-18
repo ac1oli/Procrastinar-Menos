@@ -1,0 +1,5 @@
+# Scripts de instalação: só o esbuild (binário do Vite). O msw não precisa do seu
+# (o service worker não é usado; os testes rodam no Node).
+allowBuilds:
+  esbuild: true
+  msw: false
