@@ -79,5 +79,7 @@ Nenhuma delas se identifica como Firefox, e o Firefox não foi usado em nenhum p
 
 ## 4. Mudanças relacionadas (FASE 4)
 
-- Com o dashboard servido pelo Laravel, `GET /` e as rotas da interface passam a entregar o `index.html` **sem iniciar sessão**. Visitas à interface deixam de criar linhas anônimas; a sessão só nasce em `/sanctum/csrf-cookie`, quando o app precisa dela.
+- Na branch `feat/fase4-dashboard-producao` (ADR-0010), `GET /` e as rotas da interface entregam o `index.html` **sem iniciar sessão**, o que está coberto por teste.
+  - **O que deixa de acontecer:** uma visita que só carrega a página, como esta de 07:34, não cria mais linha em `sessions`.
+  - **O que continua:** quando o app abre no navegador, ele consulta `/api/me`, e o Sanctum inicia uma sessão anônima, como já acontecia com o dev server. Ela vence em 120 minutos.
 - Fica proposto registrar o User-Agent já presente em `sessions` também no log de acesso, para investigações futuras. Isso ainda não foi implementado; depende de decidir antes o que pode ir para log (ADR-0008, D5).
