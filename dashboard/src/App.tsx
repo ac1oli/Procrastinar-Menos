@@ -26,6 +26,7 @@ const OnboardingPage = page(() => import('@/features/onboarding/OnboardingPage')
 const GoalsPage = page(() => import('@/features/planning/GoalsPage'), 'GoalsPage')
 const RoutinePage = page(() => import('@/features/planning/RoutinePage'), 'RoutinePage')
 const PrivacyPage = page(() => import('@/features/privacy/PrivacyPage'), 'PrivacyPage')
+const ProfilePage = page(() => import('@/features/profile/ProfilePage'), 'ProfilePage')
 
 export const routes: RouteObject[] = [
   { path: '/entrar', element: <PublicOnly><LoginPage /></PublicOnly> },
@@ -49,6 +50,7 @@ export const routes: RouteObject[] = [
       { path: 'rotina', element: <RoutinePage /> },
       { path: 'objetivos', element: <GoalsPage /> },
       { path: 'privacidade', element: <PrivacyPage /> },
+      { path: 'perfil', element: <ProfilePage /> },
       { path: '*', element: <p className="text-muted-foreground">Página não encontrada.</p> },
     ],
   },

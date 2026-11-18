@@ -4,11 +4,21 @@ export interface Data<T> {
   data: T
 }
 
+/** Situação do fuso calculada no backend (deslocamento, horário de verão, próxima mudança). */
+export interface TimezoneDetails {
+  offset: string
+  abbreviation: string
+  is_dst: boolean
+  local_time: string
+  next_transition: { at: string; offset: string; is_dst: boolean } | null
+}
+
 export interface User {
   id: string
   name: string
   email: string
   timezone: string
+  timezone_details: TimezoneDetails
   created_at: string
 }
 

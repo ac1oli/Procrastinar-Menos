@@ -43,6 +43,15 @@ export const auth = {
   deleteAccount: (password: string) => api<void>('/me', { method: 'DELETE', body: { password } }),
 }
 
+export const profile = {
+  update: (input: { name?: string; timezone?: string }) => data(api<Data<User>>('/me', { method: 'PATCH', body: input })),
+  updateEmail: (email: string, currentPassword: string) =>
+    data(api<Data<User>>('/me/email', { method: 'PUT', body: { email, current_password: currentPassword } })),
+  updatePassword: (input: { current_password: string; password: string; password_confirmation: string }) =>
+    data(api<Data<{ other_sessions_ended: number }>>('/me/password', { method: 'PUT', body: input })),
+  timezones: () => data(api<Data<string[]>>('/timezones')),
+}
+
 export const consents = {
   get: () => data(api<Data<ConsentState>>('/nexo/consents')),
   history: () => data(api<Data<ConsentEvent[]>>('/nexo/consents/history')),

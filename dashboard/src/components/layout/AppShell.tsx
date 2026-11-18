@@ -12,6 +12,7 @@ import {
   ShieldCheckIcon,
   SunIcon,
   TargetIcon,
+  UserRoundIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
@@ -126,6 +127,10 @@ function UserMenu() {
           <span className="block truncate">{me?.name}</span>
           <span className="block truncate text-xs font-normal text-muted-foreground">{me?.email}</span>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate('/perfil')}>
+          <UserRoundIcon /> Perfil e fuso horário
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Tema</DropdownMenuLabel>
         {(

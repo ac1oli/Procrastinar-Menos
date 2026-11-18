@@ -57,7 +57,21 @@ export const fakeUser: User = {
   name: 'Pessoa Fictícia',
   email: 'ficticia@example.com',
   timezone: 'America/Sao_Paulo',
+  timezone_details: { offset: '-03:00', abbreviation: '-03', is_dst: false, local_time: '2026-11-18T09:00:00-03:00', next_transition: null },
   created_at: '2026-11-18T10:00:00Z',
+}
+
+/** Detalhes fictícios por fuso (o real vem da base de fusos do PHP). */
+const zoneDetails: Record<string, User['timezone_details']> = {
+  'America/Sao_Paulo': fakeUser.timezone_details,
+  'America/New_York': {
+    offset: '-05:00',
+    abbreviation: 'EST',
+    is_dst: false,
+    local_time: '2026-11-18T07:00:00-05:00',
+    next_transition: { at: '2026-03-08T03:00:00-04:00', offset: '-04:00', is_dst: true },
+  },
+  'Europe/Lisbon': { offset: '+00:00', abbreviation: 'WET', is_dst: false, local_time: '2026-11-18T12:00:00+00:00', next_transition: null },
 }
 
 function freshDb(): Db {
@@ -184,6 +198,29 @@ export const handlers = [
     return noContent()
   })),
   http.get('/api/me', guard(() => ok({ data: db.user }))),
+  http.get('/api/timezones', guard(() => ok({ data: Object.keys(zoneDetails) }))),
+  http.patch('/api/me', guard(({ body }) => {
+    const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : undefined
+    if (body.name !== undefined && !name) return invalid('name', 'Informe um nome de exibição.')
+    if (body.timezone !== undefined && !zoneDetails[body.timezone as string]) {
+      return invalid('timezone', 'Fuso horário desconhecido. Use um identificador IANA, como America/Sao_Paulo.')
+    }
+    const timezone = (body.timezone as string | undefined) ?? db.user!.timezone
+    db.user = { ...db.user!, ...(name ? { name } : {}), timezone, timezone_details: zoneDetails[timezone] }
+    return ok({ data: db.user })
+  })),
+  http.put('/api/me/email', guard(({ body }) => {
+    if (body.current_password !== db.password) return invalid('current_password', 'A senha atual está incorreta.')
+    if (body.email === 'ocupado@example.com') return invalid('email', 'Este e-mail já está em uso.')
+    db.user = { ...db.user!, email: String(body.email).trim().toLowerCase() }
+    return ok({ data: db.user })
+  })),
+  http.put('/api/me/password', guard(({ body }) => {
+    if (body.current_password !== db.password) return invalid('current_password', 'A senha atual está incorreta.')
+    if (String(body.password).length < 10) return invalid('password', 'A senha deve ter pelo menos 10 caracteres.')
+    db.password = String(body.password)
+    return ok({ data: { other_sessions_ended: 2 } })
+  })),
   http.delete('/api/me', guard(({ body }) => {
     if (body.password !== db.password) return invalid('password', 'A senha está incorreta.')
     db.user = null
