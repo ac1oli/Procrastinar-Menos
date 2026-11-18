@@ -13,46 +13,29 @@ import { Button } from '@/components/ui/button'
 import { Badge, Card, CardContent, EmptyState, Skeleton } from '@/components/ui/display'
 import { Checkbox, Input, Label } from '@/components/ui/form-controls'
 import { useConsents, useFormatDate } from '@/features/auth/session'
+import { ClearHistoryAction } from '@/features/data/BulkActions'
 import { cn } from '@/lib/utils'
 
 export function HistoryPage() {
   const formatDate = useFormatDate()
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
-  const clearAll = useConfirm()
-  const queryClient = useQueryClient()
   const consents = useConsents()
   const historyOn = consents.data?.scopes.find((s) => s.scope === 'nexo.history')?.granted
 
   const list = useQuery({ queryKey: keys.conversations(query), queryFn: () => conversations.list(query) })
-  const clear = useMutation({
-    mutationFn: conversations.clear,
-    onSuccess: (r) => {
-      toast.success(`${r.deleted_conversations} conversa(s) excluída(s).`)
-      clearAll.close()
-      queryClient.invalidateQueries({ queryKey: ['conversations'] })
-    },
-    onError: (e) => toast.error(errorMessage(e)),
-  })
-
   return (
     <>
       <PageHeader
         title="Histórico de conversas"
         description="Conversas guardadas com o seu consentimento. Dados como CPF, cartões e senhas aparecem mascarados."
-        actions={
-          !!list.data?.length && (
-            <Button variant="outline" onClick={() => clearAll.open(true)}>
-              <Trash2Icon /> Apagar todo o histórico
-            </Button>
-          )
-        }
+        actions={!!list.data?.length && <ClearHistoryAction />}
       />
 
       {historyOn === false && (
         <p className="mb-4 rounded-lg border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
           O histórico está desligado: novas conversas não são guardadas. As existentes continuam aqui até você excluí-las ou o prazo vencer.{' '}
-          <Link to="/privacidade" className="text-primary underline-offset-4 hover:underline">
+          <Link to="/meus-dados" className="text-primary underline-offset-4 hover:underline">
             Alterar
           </Link>
         </p>
@@ -106,15 +89,6 @@ export function HistoryPage() {
         </ul>
       )}
 
-      <ConfirmDialog
-        open={clearAll.isOpen}
-        onOpenChange={(o) => !o && clearAll.close()}
-        title="Apagar todo o histórico?"
-        description="Todas as conversas guardadas e as sugestões pendentes geradas a partir delas serão excluídas. Memórias que você confirmou permanecem. Esta ação não pode ser desfeita."
-        confirmLabel="Apagar tudo"
-        pending={clear.isPending}
-        onConfirm={() => clear.mutate()}
-      />
     </>
   )
 }

@@ -24,6 +24,7 @@ import { PageHeader } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Badge, Card, CardContent, EmptyState, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/display'
 import { Input, NativeSelect } from '@/components/ui/form-controls'
+import { ClearMemoriesAction } from '@/features/data/BulkActions'
 import { useConsents, useFormatDate } from '@/features/auth/session'
 import { confidenceLabel, evidenceLabel, kindLabel, originLabel, statusLabel } from '@/lib/labels'
 
@@ -68,7 +69,6 @@ function MemoryList() {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Memory | null>(null)
   const removing = useConfirm<Memory>()
-  const clearing = useConfirm()
   const queryClient = useQueryClient()
   const consents = useConsents()
   const memoryOn = consents.data?.scopes.find((s) => s.scope === 'nexo.memory')?.granted === true
@@ -96,15 +96,6 @@ function MemoryList() {
     },
     onError: (e) => toast.error(errorMessage(e)),
   })
-  const clear = useMutation({
-    mutationFn: memoriesApi.clear,
-    onSuccess: (r) => {
-      clearing.close()
-      toast.success(`${r.deleted_memories} memória(s) excluída(s).`)
-      refresh()
-    },
-    onError: (e) => toast.error(errorMessage(e)),
-  })
 
   return (
     <div className="grid gap-4">
@@ -112,7 +103,7 @@ function MemoryList() {
         <p className="rounded-lg border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
           A memória de longo prazo está desligada: o NEXO não usa estas memórias e novas não podem ser criadas. Você ainda pode consultar, editar e
           excluir as existentes.{' '}
-          <Link to="/privacidade" className="text-primary underline-offset-4 hover:underline">
+          <Link to="/meus-dados" className="text-primary underline-offset-4 hover:underline">
             Alterar
           </Link>
         </p>
@@ -143,11 +134,7 @@ function MemoryList() {
         <Button onClick={() => setCreating(true)} disabled={!memoryOn}>
           <PlusIcon /> Nova memória
         </Button>
-        {!!list.data?.length && (
-          <Button variant="ghost" onClick={() => clearing.open(true)}>
-            <Trash2Icon /> Excluir todas
-          </Button>
-        )}
+        {!!list.data?.length && <ClearMemoriesAction />}
       </div>
 
       {list.isPending ? (
@@ -211,15 +198,6 @@ function MemoryList() {
         confirmLabel="Excluir"
         pending={mutate.isPending}
         onConfirm={() => removing.target && mutate.mutate({ action: 'remove', memory: removing.target })}
-      />
-      <ConfirmDialog
-        open={clearing.isOpen}
-        onOpenChange={(o) => !o && clearing.close()}
-        title="Excluir todas as memórias?"
-        description="Todas as memórias e seus índices de busca serão excluídos. Esta ação não pode ser desfeita."
-        confirmLabel="Excluir todas"
-        pending={clear.isPending}
-        onConfirm={() => clear.mutate()}
       />
     </div>
   )
