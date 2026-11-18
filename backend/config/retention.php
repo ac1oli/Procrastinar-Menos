@@ -28,6 +28,8 @@ return [
             'device.token_rotated',
             'device.monitoring_enabled',
             'device.monitoring_disabled',
+            'account.email_changed',
+            'account.password_changed',
             'account.deleted',
         ],
 
@@ -38,6 +40,7 @@ return [
         */
         'not_retained_on_account_deletion' => [
             'auth.logout',
+            'account.profile_updated',
             'nexo.consent.granted',
             'nexo.consent.revoked',
             'nexo.consent.declined',

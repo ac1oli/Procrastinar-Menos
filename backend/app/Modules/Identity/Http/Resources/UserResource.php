@@ -3,6 +3,7 @@
 namespace App\Modules\Identity\Http\Resources;
 
 use App\Models\User;
+use App\Modules\Identity\Support\TimezoneDetails;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,6 +17,8 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'timezone' => $this->timezone,
+            // Deslocamento atual, horário de verão e próxima mudança, calculados no backend.
+            'timezone_details' => TimezoneDetails::for($this->timezone),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

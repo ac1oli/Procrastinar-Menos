@@ -7,6 +7,7 @@ use App\Modules\Devices\Http\Controllers\DeviceController;
 use App\Modules\Devices\Http\Controllers\DeviceSessionController;
 use App\Modules\Goals\Http\Controllers\GoalController;
 use App\Modules\Identity\Http\Controllers\AuthController;
+use App\Modules\Identity\Http\Controllers\ProfileController;
 use App\Modules\Memory\Http\Controllers\MemoryController;
 use App\Modules\Memory\Http\Controllers\MemorySuggestionController;
 use App\Modules\Nexo\Http\Controllers\NexoController;
@@ -29,6 +30,10 @@ Route::prefix('auth')->middleware('throttle:auth')->group(function () {
 Route::middleware(['auth:sanctum', 'actor:user', 'db.user'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+    Route::patch('me', [ProfileController::class, 'update']);
+    Route::put('me/email', [ProfileController::class, 'updateEmail'])->middleware('throttle:auth');
+    Route::put('me/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:auth');
+    Route::get('timezones', [ProfileController::class, 'timezones']);
     Route::delete('me', [AuthController::class, 'destroy'])->middleware('throttle:auth');
     Route::post('me/exports', [DataExportController::class, 'store'])->middleware('throttle:auth');
     Route::get('me/exports/{export}', [DataExportController::class, 'show']);
