@@ -24,4 +24,6 @@ EXPOSE 8000
 # Laravel (ADR-0010). Não usamos `php artisan serve` porque ele repassa ao processo
 # filho só uma lista fixa de variáveis de ambiente, descartando as DB_* do compose.
 # O roteador usa getcwd() como pasta pública, por isso o `cd public`.
-CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../server.php"]
+# Sem backend/server.php (código anterior à FASE 4), usa o roteador padrão do Laravel:
+# a mesma imagem serve qualquer branch.
+CMD ["sh", "-c", "cd public && if [ -f ../server.php ]; then router=../server.php; else router=../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php; fi && exec php -S 0.0.0.0:8000 \"$router\""]
