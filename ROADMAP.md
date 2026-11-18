@@ -5,24 +5,29 @@
 
 ## Onde paramos (2026-11-18)
 
-- FASE 3: **memória do NEXO implementada e validada** ([ADR-0008](docs/decisions/0008-memoria-do-nexo.md),
-  diferenças do plano em §8), na branch `feat/nexo-memoria`, aguardando revisão do proprietário
-  antes de integrar na `main`.
-  - Backend: 203 testes (882 verificações), sem IA real. ai-service: 63 testes + 4 de integração
-    com o Ollama real. Backup: 17 verificações de cifragem e restauração. Ponta a ponta com IA e
-    banco reais: 44/44.
-  - A aplicação agora conecta como `pm_runtime` (sem bypass de RLS); `pm_app` só via
-    `artisan-owner.ps1`.
-- **Aguardando o proprietário:**
-  1. Autorizar (ou não) habilitar o BitLocker no `C:` (desligado; TPM pronto).
-  2. Dispositivo físico separado para o backup e autorização para agendar as tarefas no Windows
-     ([backup-e-restauracao.md](docs/security/backup-e-restauracao.md) §4).
-  3. Autorizar remover do banco principal os registros anonimizados do teste ponta a ponta
-     (auditoria sem identificadores e 11 entradas do diário com UUIDs fictícios). Expiram
-     sozinhos em 365 e 35 dias.
-  4. Revisar e aprovar a integração de `feat/nexo-memoria` na `main`.
-- **Próxima ação após a integração:** dashboard React (FASE 3, último item), começando pelas
-  telas de consentimento (primeiro acesso), memórias e histórico.
+- FASE 3: **memória do NEXO integrada na `main`** após revisão final (migrations, RLS,
+  permissões do `pm_runtime`, exclusões, segredos, conflitos).
+  - Backend: 203 testes. ai-service: 63 testes + 4 de integração com o Ollama real.
+  - Backup: 24 verificações de cifragem, integridade e restauração com reaplicação de exclusões.
+  - Ponta a ponta com IA e banco reais: 44/44.
+- **Decisões do proprietário (2026-11-18):**
+  - **BitLocker:** NÃO habilitar até haver dispositivo externo e a chave de recuperação
+    guardada fora do computador. Não alterar a criptografia do disco sem nova autorização.
+  - **Backup externo:** arquitetura aprovada, mas **sem** tarefas agendadas, sem execução e sem
+    destino improvisado até o dispositivo ser definido. Requisitos e operação documentados em
+    [backup-e-restauracao.md](docs/security/backup-e-restauracao.md).
+  - **Registros do teste ponta a ponta:** mantidos (fictícios e anonimizados), com os prazos
+    normais ([diagnóstico](docs/diagnostics/2026-11-18-registros-do-teste-ponta-a-ponta.md)).
+- **Em andamento:** dashboard React na branch `feat/dashboard-fundacao` (FASE 3, último item):
+  - cadastro e login;
+  - onboarding com autorizações independentes;
+  - painel;
+  - conversa com o NEXO (inclusive privada);
+  - histórico;
+  - memórias e sugestões;
+  - privacidade e retenção;
+  - exportação;
+  - rotina e objetivos.
 
 ## FASE 1 — Diagnóstico e planejamento ✅
 - [x] Inspeção de hardware, SO e ferramentas ([diagnóstico](docs/diagnostics/2026-11-16-fase1.md))
@@ -92,7 +97,8 @@
 - Exportação: dados do NEXO prontos (`/api/me/exports`); perfil, rotina, objetivos e dispositivos na FASE 4.
 - Primeira mensagem após o modelo ficar ocioso leva ~25 s (carga na GPU); avaliar `keep_alive` maior ou pré-aquecimento.
 - `fastapi.testclient` emite aviso de depreciação (Starlette recomenda `httpx2`); acompanhar na próxima atualização de dependências.
-- Backup ainda não agendado: o servidor tem um único disco (falta dispositivo separado). BitLocker desligado no `C:`.
+- Backup não agendado e BitLocker desligado no `C:`: ambos aguardam o dispositivo externo e nova autorização do proprietário.
+- RLS cobre as tabelas do NEXO; dispositivos, rotinas, objetivos e auditoria seguem isolados só pela aplicação (policies). Avaliar estender a RLS na FASE 4.
 - Sugestões reais do `qwen3:8b` têm qualidade irregular (erro de grafia, sugestão derivada da fala do NEXO); a confirmação da pessoa é a barreira. Avaliar ajuste de prompt com um conjunto de avaliação.
 - Limiar e quantidade da recuperação (0,35 / 6) não calibrados: falta o conjunto de avaliação (~50 pares).
 - Detecção de dados sensíveis é por padrões e palavras-chave: não é infalível (documentado na política).
