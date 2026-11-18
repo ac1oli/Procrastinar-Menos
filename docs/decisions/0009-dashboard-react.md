@@ -51,22 +51,36 @@ O proprietário pediu a primeira versão do dashboard. Os requisitos:
    (v4) instalou repetidamente um pacote npm `cn` alheio ao projeto, sem relação com o shadcn.
    Por cautela com a cadeia de suprimentos, ele não é usado. O pnpm 12 só permite o script de
    instalação do `esbuild` (`pnpm-workspace.yaml`).
-7. **Testes em duas camadas:**
+7. **Testes em três camadas:**
    - **Telas** (Vitest + Testing Library + MSW): o app inteiro com rotas e guardas, contra um
      backend falso em memória que reproduz as regras do real (CSRF, consentimentos, dependências,
      escolha de dados, modo privado, 422/409/503). Nenhuma requisição sai da máquina.
    - **Contrato** (`pnpm test:contract`): as mesmas funções de `endpoints.ts`, contra o backend
      **real** e a IA real, num banco isolado (`procrastinar_menos_e2e`, container
      `pm-backend-e2e`, perfil `e2e` do compose). O banco principal não é tocado.
+   - **Ponta a ponta no navegador** (`pnpm test:e2e`, Playwright + Chromium sem janela). O Vite
+     sobe com o proxy apontado para o mesmo backend isolado e roda:
+     - o fluxo completo, do cadastro à exclusão da conta, com a IA real;
+     - o layout de celular (Pixel 7, sem rolagem horizontal, menu lateral).
+
+     Também verifica que:
+     - o cookie de sessão é HttpOnly;
+     - nada da conta fica no `localStorage`;
+     - todas as requisições ficam na origem do dashboard;
+     - não há erros de script.
+
+     Sem rastros, vídeos ou capturas de tela gravados. O `webServer` nunca reaproveita um dev
+     server já aberto, porque ele poderia estar ligado ao banco principal.
 
 ## Alternativas avaliadas
 
 - **Token Bearer guardado no navegador:** exposto a XSS e contraria o ADR-0005. Rejeitado.
 - **CORS com cookies entre `5173` e `8000`:** mais configuração e superfície; o proxy dá mesma
   origem sem custo. Rejeitado.
-- **E2E com navegador (Playwright):** a máquina não tem Edge nem Chrome instalados, e baixar o
-  Chromium (~170 MB, fora do repositório) depende de autorização. Substituído, por ora, pelo
-  teste de contrato + testes de tela.
+- **Instalar Chrome ou Edge para o E2E:** rejeitado pelo proprietário. Ele autorizou apenas o
+  Chromium do Playwright, fora do repositório (2026-11-18). Ficou só o executável sem janela
+  (`chromium_headless_shell`, ~290 MB). A versão com janela foi apagada após o download porque
+  os testes não a usam.
 - **Roteador "data" do React Router:** sem loaders ou actions ele não traz ganho, e no jsdom
   cria `Request` incompatível com o Node. Usamos o roteador declarativo.
 
@@ -77,3 +91,13 @@ O proprietário pediu a primeira versão do dashboard. Os requisitos:
 - O backend falso dos testes precisa acompanhar o contrato real. O teste de contrato é a rede de
   segurança: se o backend mudar, ele falha.
 - Atualizar para Vite 8, React Router 8 e TypeScript 7 exige revisar APIs.
+- **Vitest 3 → 4 (2026-11-18), na revisão de segurança:**
+  - avisos críticos do `tinypool` e moderados do `@vitest/mocker` (ferramentas de teste, fora do
+    build);
+  - o `@vitest/coverage-v8`, sem uso, foi removido.
+
+  Resta o aviso "alto" de ReDoS do `picomatch` (via Vite, só em desenvolvimento), sem correção
+  publicada. Ele não é explorável aqui, porque os padrões vêm do próprio projeto.
+- **Falha encontrada só no Chromium:** o onboarding navegava antes de atualizar o cache das
+  autorizações, e a guarda devolvia a pessoa ao onboarding. Agora o estado devolvido pela API
+  entra no cache antes da navegação.

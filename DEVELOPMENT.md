@@ -108,6 +108,9 @@ O teste de contrato roda contra um backend real **isolado**, que nunca usa o ban
 ```powershell
 pwsh infrastructure/scripts/e2e-db.ps1   # cria procrastinar_menos_e2e e sobe pm-backend-e2e (:8010)
 cd dashboard; pnpm test:contract
+pnpm exec playwright install --only-shell chromium   # 1x, fora do repositório
+pnpm test:e2e                                        # Chromium real, mesmo backend isolado
+cd ..; pwsh infrastructure/scripts/e2e-db.ps1 -Down  # remove banco e container de E2E
 ```
 
 Detalhes em [dashboard/README.md](dashboard/README.md).

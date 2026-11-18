@@ -54,7 +54,8 @@ docker exec pm-ai-service python -m pytest -q           # ai-service (mocks)
 docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integration
 ollama list
 cd dashboard; pnpm test; pnpm typecheck; pnpm lint; pnpm build   # dashboard (sem rede)
-pwsh infrastructure/scripts/e2e-db.ps1; cd dashboard; pnpm test:contract   # contrato com backend real isolado
+pwsh infrastructure/scripts/e2e-db.ps1; cd dashboard; pnpm test:contract; pnpm test:e2e   # contrato + Chromium, backend isolado
+pwsh infrastructure/scripts/e2e-db.ps1 -Down            # remove banco e container de E2E
 ```
 
 ## Armadilhas conhecidas
@@ -79,4 +80,5 @@ pwsh infrastructure/scripts/e2e-db.ps1; cd dashboard; pnpm test:contract   # con
 - Conteúdo de conversa/memória nunca vai para fila, log ou auditoria: jobs levam só IDs.
 - Dashboard: nada de tokens/credenciais no navegador; todo acesso à API por `src/api/endpoints.ts`.
 - Não usar o CLI do shadcn: ele instalou um pacote `cn` alheio (ADR-0009). Componentes em `src/components/ui`.
-- Teste de contrato do dashboard usa `procrastinar_menos_e2e` (`pm-backend-e2e`, :8010); nunca o banco principal.
+- Teste de contrato e E2E do dashboard usam `procrastinar_menos_e2e` (`pm-backend-e2e`, :8010); nunca o banco principal.
+- Não instalar Chrome/Edge: o E2E usa só o Chromium sem janela do Playwright (`--only-shell`), autorizado pelo proprietário.

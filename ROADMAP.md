@@ -18,8 +18,8 @@
     [backup-e-restauracao.md](docs/security/backup-e-restauracao.md).
   - **Registros do teste ponta a ponta:** mantidos (fictícios e anonimizados), com os prazos
     normais ([diagnóstico](docs/diagnostics/2026-11-18-registros-do-teste-ponta-a-ponta.md)).
-- **Dashboard React: primeira versão pronta** na branch `feat/dashboard-fundacao`, aguardando
-  revisão para integrar ([ADR-0009](docs/decisions/0009-dashboard-react.md)).
+- **Dashboard React integrado na `main`** depois dos testes com navegador real e da revisão de
+  segurança ([ADR-0009](docs/decisions/0009-dashboard-react.md)).
   - **Funcionalidades:**
     - cadastro e entrada;
     - onboarding com autorizações independentes (D1);
@@ -32,14 +32,27 @@
 
     Tudo ligado à API real.
   - **Testes:**
-    - 40 testes de tela (Vitest + MSW, sem rede);
-    - 9 testes de contrato contra o backend **real** e a IA real, em banco isolado
-      (`procrastinar_menos_e2e`);
+    - 40 testes de tela (Vitest 4 + MSW, sem rede);
+    - 9 testes de contrato contra o backend **real** e a IA real;
+    - 12 testes ponta a ponta no **Chromium** (Playwright): fluxo completo no computador + layout de
+      celular, com IA real;
+    - contrato e ponta a ponta rodam no banco isolado `procrastinar_menos_e2e`, recriado sob
+      demanda por `e2e-db.ps1` e removido com `-Down`;
     - TypeScript estrito, lint e build limpos.
-- **Próxima ação:**
-  1. Revisão do proprietário e integração do dashboard.
-  2. FASE 4: servir o dashboard na mesma origem da API em produção, perfil e fuso editáveis,
-     painel "Meus dados" completo e E2E com navegador (depende de instalar um navegador de teste).
+  - **Falha encontrada só no navegador real e corrigida:** ao salvar o onboarding, o painel via o
+    estado antigo das autorizações e devolvia a pessoa ao onboarding, preso em "Salvando…".
+  - **Revisão de segurança:**
+    - sem segredos no código, no histórico nem no build;
+    - sem HTML injetado ou `eval`;
+    - todas as requisições na mesma origem;
+    - sessão só em cookie HttpOnly;
+    - Vitest 3 → 4 para corrigir avisos críticos do `tinypool` e do `@vitest/mocker`
+      (ferramentas de teste, fora do build).
+- **Próxima ação (FASE 4):**
+  - servir o dashboard na mesma origem da API em produção;
+  - perfil e fuso editáveis;
+  - painel "Meus dados" completo;
+  - E2E no CI quando houver CI.
 
 ## FASE 1 — Diagnóstico e planejamento ✅
 - [x] Inspeção de hardware, SO e ferramentas ([diagnóstico](docs/diagnostics/2026-11-16-fase1.md))
@@ -63,7 +76,7 @@
 - [x] PHP/Composer em container verificados (PHP 8.5.12, Composer 2.11.2) — faltam extensões, o backend terá Dockerfile próprio
 - [x] Python 3.14 validado com as dependências do ai-service
 
-## FASE 3 — Fundação do sistema ✅ (aguardando revisão do dashboard)
+## FASE 3 — Fundação do sistema ✅
 - [x] Backend Laravel 13.42 (PHP 8.4 em container) com PostgreSQL, módulos em `app/Modules`
 - [x] Usuários (UUID), autenticação SPA por sessão + CSRF, rate limiting, policies por `user_id` (404 para recurso alheio)
 - [x] Dispositivos: vínculo com token próprio e escopos, heartbeat, revogação, consentimento auditado ([ADR-0005](docs/decisions/0005-autenticacao-e-dispositivos.md))
@@ -82,7 +95,7 @@
 - [x] Backup cifrado + restauração com reaplicação de exclusões (scripts e teste); agendamento pendente de dispositivo
 - [x] Dashboard React (Vite + TS + Tailwind + componentes shadcn/Radix) com identidade visual do NEXO, ligado à API real ([ADR-0009](docs/decisions/0009-dashboard-react.md))
 - [x] Testes do backend (PHPUnit — 203 testes) e do ai-service (pytest — 63 + 4 de integração)
-- [x] Testes do dashboard: 40 de tela (Vitest + MSW) + 9 de contrato com o backend real isolado
+- [x] Testes do dashboard: 40 de tela (Vitest + MSW) + 9 de contrato + 12 ponta a ponta no Chromium (Playwright), com backend e IA reais em banco isolado
 
 ## FASE 4 — Primeira versão funcional
 - [ ] Cadastro/login, perfil, onboarding em etapas
@@ -114,5 +127,7 @@
 - Sugestões reais do `qwen3:8b` têm qualidade irregular (erro de grafia, sugestão derivada da fala do NEXO); a confirmação da pessoa é a barreira. Avaliar ajuste de prompt com um conjunto de avaliação.
 - Limiar e quantidade da recuperação (0,35 / 6) não calibrados: falta o conjunto de avaliação (~50 pares).
 - Detecção de dados sensíveis é por padrões e palavras-chave: não é infalível (documentado na política).
-- Sem navegador de teste na máquina (Edge/Chrome ausentes): E2E com navegador depende de autorização para baixar o Chromium do Playwright.
+- Testes com navegador usam só o Chromium do Playwright sem janela (~290 MB em `%LOCALAPPDATA%\ms-playwright`, fora do repositório; Chrome e Edge não instalados).
+- `picomatch` (dependência do Vite, só em desenvolvimento) tem aviso "alto" de ReDoS sem correção publicada. Os padrões são do próprio projeto, então não é explorável aqui. Acompanhar.
+- O `pm-backend-e2e` monta o mesmo `backend/` e grava no mesmo `storage/logs` do backend de desenvolvimento (só dados fictícios). Separar se os testes crescerem.
 - Dashboard ainda não tem modo de produção na mesma origem da API (hoje: dev server com proxy).

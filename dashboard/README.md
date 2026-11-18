@@ -41,6 +41,7 @@ pnpm build
 # Contrato com o backend REAL e a IA real, em banco isolado (nunca o principal):
 pwsh ../infrastructure/scripts/e2e-db.ps1        # recria procrastinar_menos_e2e e sobe pm-backend-e2e
 pnpm test:contract
+pnpm test:e2e                                     # Chromium real: fluxo completo + celular
 pwsh ../infrastructure/scripts/e2e-db.ps1 -Down  # opcional: remove o banco e o container de E2E
 ```
 
@@ -54,7 +55,12 @@ src/
   lib/          labels (textos pt-BR) · theme (claro/escuro/sistema) · utils
   test/         server.ts (backend falso com as regras do real) · render.tsx · setup.ts
   contract/     teste de contrato contra o backend real
+e2e/            Playwright no Chromium contra o backend isolado (fluxo completo e celular)
 ```
+
+O `pnpm test:e2e` precisa do Chromium do Playwright. Instale uma vez, fora do repositório:
+`pnpm exec playwright install --only-shell chromium`. Ele sobe o próprio dev server, apontado
+para `127.0.0.1:8010`, e recusa rodar se a porta 5173 já estiver em uso.
 
 ## Convenções
 
