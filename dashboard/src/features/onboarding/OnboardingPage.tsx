@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router'
 
 import { consents as consentsApi } from '@/api/endpoints'
 import { errorMessage, keys } from '@/api/queries'
-import type { ConsentScope, ConsentScopeId } from '@/api/types'
+import type { ConsentScope, ConsentScopeId, ConsentState } from '@/api/types'
 import { NexoMark } from '@/components/layout/NexoMark'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/display'
@@ -52,15 +52,23 @@ export function OnboardingPage() {
       const version = consents.data!.policy_version
       // Requisitos antes dos dependentes.
       const order = [...pending].sort((a, b) => a.requires.length - b.requires.length)
+      let state: ConsentState | undefined
       for (const scope of order) {
-        if (choices[scope.scope] === 'yes') await consentsApi.grant(scope.scope, version)
+        if (choices[scope.scope] === 'yes') state = await consentsApi.grant(scope.scope, version)
       }
       for (const scope of order) {
-        if (choices[scope.scope] === 'no') await consentsApi.revoke(scope.scope)
+        if (choices[scope.scope] === 'no') state = await consentsApi.revoke(scope.scope)
       }
+      return state ?? consentsApi.get()
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.consents }),
-    onSuccess: () => navigate('/', { replace: true }),
+    // O estado novo entra no cache ANTES de navegar. Se o painel visse o estado antigo
+    // (ainda com pendências), a guarda devolveria a pessoa para cá e a tela ficaria
+    // presa em "Salvando…" (falha encontrada no Chromium real, não no jsdom).
+    onSuccess: (state) => {
+      queryClient.setQueryData(keys.consents, state)
+      navigate('/', { replace: true })
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: keys.consents }),
   })
 
   if (consents.isPending) return <FullScreenStatus>Carregando…</FullScreenStatus>
