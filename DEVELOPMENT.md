@@ -94,12 +94,30 @@ docker exec pm-ai-service ruff check .
 
 Detalhes em [ai-service/README.md](ai-service/README.md).
 
-## 7. Demais componentes
+## 7. Dashboard (React)
 
-Cada pasta terá seu próprio guia ao ser inicializada:
-`dashboard/`, `desktop-agent/`, `mobile/`, `browser-extension/`.
+```powershell
+cd dashboard
+pnpm install
+pnpm dev     # http://localhost:5173, com proxy de /api e /sanctum para 127.0.0.1:8000
+pnpm test    # testes de tela com backend falso (sem rede)
+```
 
-## 8. Fluxo Git
+O teste de contrato roda contra um backend real **isolado**, que nunca usa o banco principal:
+
+```powershell
+pwsh infrastructure/scripts/e2e-db.ps1   # cria procrastinar_menos_e2e e sobe pm-backend-e2e (:8010)
+cd dashboard; pnpm test:contract
+```
+
+Detalhes em [dashboard/README.md](dashboard/README.md).
+
+## 8. Demais componentes
+
+Cada pasta terá seu próprio guia ao ser inicializada: `desktop-agent/`, `mobile/`,
+`browser-extension/`.
+
+## 9. Fluxo Git
 
 - `main` é estável. Trabalho em branches `feat/<modulo>-<descricao>`,
   `fix/...`, `docs/...`, `chore/...`.

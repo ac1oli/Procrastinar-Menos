@@ -53,6 +53,8 @@ pwsh infrastructure/scripts/artisan-owner.ps1 test       # backend (sem IA real;
 docker exec pm-ai-service python -m pytest -q           # ai-service (mocks)
 docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integration
 ollama list
+cd dashboard; pnpm test; pnpm typecheck; pnpm lint; pnpm build   # dashboard (sem rede)
+pwsh infrastructure/scripts/e2e-db.ps1; cd dashboard; pnpm test:contract   # contrato com backend real isolado
 ```
 
 ## Armadilhas conhecidas
@@ -75,3 +77,6 @@ ollama list
 - Em testes, trocar de usuário com sessão web exige `flushSession()` (AuthenticateSession).
 - No PowerShell, `H` é alias de `Get-History`: não nomeie funções de script com aliases.
 - Conteúdo de conversa/memória nunca vai para fila, log ou auditoria: jobs levam só IDs.
+- Dashboard: nada de tokens/credenciais no navegador; todo acesso à API por `src/api/endpoints.ts`.
+- Não usar o CLI do shadcn: ele instalou um pacote `cn` alheio (ADR-0009). Componentes em `src/components/ui`.
+- Teste de contrato do dashboard usa `procrastinar_menos_e2e` (`pm-backend-e2e`, :8010); nunca o banco principal.
