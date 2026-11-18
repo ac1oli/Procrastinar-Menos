@@ -11,12 +11,19 @@
     Tudo sai cifrado (AES-256-GCM, BackupCrypto.psm1). O texto em claro existe só por
     instantes, em arquivo temporário apagado em seguida. Nada vai para a nuvem nesta fase.
 
-    Recusa: destino no mesmo disco físico do banco (C:) — exceto com -AllowSameDiskForTesting —,
-    caminhos de rede e chave guardada no próprio destino.
+    Destino:
+    - Precisa ser preparado UMA vez com -InitializeDestination (grava o marcador
+      pm-backup-destino.json). Nas execuções normais o script nunca cria o destino: se o
+      dispositivo estiver desconectado, com outra letra ou sem o marcador, ele para com erro
+      (código 2) sem gravar nada em lugar nenhum — não há destino alternativo automático.
+    - Recusa o mesmo disco físico do sistema e do banco (C:), caminhos de rede e chave
+      guardada no próprio destino. -AllowSameDiskForTesting só é aceito dentro da pasta
+      temporária do sistema (uso exclusivo do backup-selftest.ps1).
 
     Somente leitura no banco: não altera nem apaga dados.
 
 .EXAMPLE
+    pwsh infrastructure/scripts/backup/backup.ps1 -Destination E:\pm-backups -InitializeDestination
     pwsh infrastructure/scripts/backup/backup.ps1 -Destination E:\pm-backups
     pwsh infrastructure/scripts/backup/backup.ps1 -Destination E:\pm-backups -Mode Journal
 #>
@@ -26,6 +33,7 @@ param(
     [string]$KeyPath = (Join-Path $env:USERPROFILE '.procrastinar-menos\backup.key'),
     [string]$Database,
     [string]$Container = 'pm-postgres',
+    [switch]$InitializeDestination,
     [switch]$AllowSameDiskForTesting
 )
 
@@ -40,20 +48,44 @@ if ($Database -notmatch '^[a-z_][a-z0-9_]{0,62}$') { throw "Nome de banco invál
 
 # --- Destino: dispositivo físico separado, local, sem a chave ------------------------------
 if ($Destination -match '^\\\\') { throw 'Destinos de rede não são permitidos nesta fase (sem nuvem).' }
-New-Item -ItemType Directory -Force -Path $Destination | Out-Null
-$destinationFull = (Resolve-Path $Destination).Path
+$destinationFull = [System.IO.Path]::GetFullPath($Destination)
+$marker = [System.IO.Path]::Combine($destinationFull, 'pm-backup-destino.json')
+$root = [System.IO.Path]::GetPathRoot($destinationFull)
+
+if (-not (Test-Path $root)) {
+    [Console]::Error.WriteLine("Dispositivo de backup indisponível ($root não existe). Nada foi gravado; o diário de exclusões continua no banco por 35 dias e será copiado na próxima execução.")
+    exit 2
+}
+if ($AllowSameDiskForTesting -and -not $destinationFull.StartsWith([System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()), [StringComparison]::OrdinalIgnoreCase)) {
+    throw '-AllowSameDiskForTesting só é aceito dentro da pasta temporária do sistema (testes).'
+}
+
 $keyFull = [System.IO.Path]::GetFullPath($KeyPath)
 if ($keyFull.StartsWith($destinationFull, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'A chave não pode ficar no mesmo local dos backups.'
 }
 
 function Get-DiskNumber([string]$Path) {
-    $letter = ([System.IO.Path]::GetPathRoot((Resolve-Path $Path).Path)).Substring(0, 1)
+    $letter = ([System.IO.Path]::GetPathRoot([System.IO.Path]::GetFullPath($Path))).Substring(0, 1)
     return (Get-Partition -DriveLetter $letter).DiskNumber
 }
 $sameDisk = (Get-DiskNumber $destinationFull) -eq (Get-DiskNumber $env:SystemDrive)
 if ($sameDisk -and -not $AllowSameDiskForTesting) {
     throw "O destino está no mesmo disco físico do sistema e do banco. Use um dispositivo separado (D9)."
+}
+
+if ($InitializeDestination) {
+    if (Test-Path $marker) { throw "Destino já preparado ($marker)." }
+    New-Item -ItemType Directory -Force -Path $destinationFull | Out-Null
+    [ordered]@{
+        id = [guid]::NewGuid().ToString()
+        created_at = (Get-Date).ToUniversalTime().ToString('o')
+        purpose = 'Backups cifrados do Procrastinar Menos (ADR-0008, D9)'
+    } | ConvertTo-Json | Set-Content $marker
+    Write-Host "Destino preparado: $destinationFull" -ForegroundColor Green
+} elseif (-not (Test-Path $marker)) {
+    [Console]::Error.WriteLine("Destino sem o marcador pm-backup-destino.json (dispositivo errado, letra trocada ou não preparado). Nada foi gravado. Prepare com -InitializeDestination.")
+    exit 2
 }
 
 $key = Get-BackupKey $KeyPath

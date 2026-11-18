@@ -127,7 +127,7 @@ INSERT INTO memory_embeddings (memory_id, user_id, embedding_model_id, content_h
  ('00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-0000000000e1', repeat('a', 64), '$vector', now());
 "@ | Out-Null
 
-    $backup = & (Join-Path $PSScriptRoot 'backup.ps1') -Destination $backupDir -Database $src -KeyPath $keyPath -AllowSameDiskForTesting 3>$null
+    $backup = & (Join-Path $PSScriptRoot 'backup.ps1') -Destination $backupDir -Database $src -KeyPath $keyPath -InitializeDestination -AllowSameDiskForTesting 3>$null
     $dumpFile = $backup | Where-Object { $_ -like '*pm-db-*' } | Select-Object -First 1
     Check 'backup completo gerado' ([bool]$dumpFile -and (Test-Path $dumpFile))
 
@@ -147,7 +147,7 @@ DELETE FROM users WHERE id = '00000000-0000-4000-8000-00000000000b';
     Check 'restauração em banco novo' ([bool](Psql 'postgres' "SELECT 1 FROM pg_database WHERE datname = '$restored'"))
 
     $q = { param($sql) (Psql $restored $sql | Select-Object -Last 1) }
-    Check 'conta A restaurada; conta B excluída depois do backup não volta' ((& $q "SELECT string_agg(name, ',') FROM users") -eq 'Pessoa Sintética A')
+    Check 'conta A restaurada; conta B excluída depois do backup não volta' ((& $q "SELECT string_agg(id::text, ',') FROM users") -eq '00000000-0000-4000-8000-00000000000a')
     Check 'memória mantida volta; memória excluída não volta' ((& $q "SELECT string_agg(id::text, ',') FROM memories") -eq '00000000-0000-4000-8000-0000000000d1')
     Check 'conversa excluída não volta (com mensagens)' ((& $q "SELECT count(*) FROM conversations") -eq '1' -and (& $q "SELECT count(*) FROM conversation_messages") -eq '2')
     Check 'consentimentos restaurados' ((& $q "SELECT count(*) FROM consents") -eq '1')
@@ -155,6 +155,29 @@ DELETE FROM users WHERE id = '00000000-0000-4000-8000-00000000000b';
     Check 'RLS forçada sobrevive à restauração' ((& $q "SELECT bool_and(relrowsecurity AND relforcerowsecurity) FROM pg_class WHERE relname IN ('memories','conversations','consents')") -eq 't')
     Check 'papel de execução mantém só DML' ((& $q "SELECT has_table_privilege('$runtime', 'memories', 'SELECT') AND NOT has_table_privilege('$runtime', 'deletion_journal', 'SELECT')") -eq 't')
     Check 'diário do banco restaurado registra as exclusões reaplicadas' ([int](& $q "SELECT count(*) FROM deletion_journal WHERE entity_type IN ('users','memories','conversations')") -ge 3)
+
+    # --- 3. Integridade e destinos inválidos -------------------------------------------------
+    Write-Host "`n== Integridade e destino ==" -ForegroundColor Cyan
+    & (Join-Path $PSScriptRoot 'verify-backup.ps1') -Destination $backupDir -KeyPath $keyPath -Container $Container *> $null
+    Check 'verify-backup aprova backup íntegro' ($LASTEXITCODE -eq 0)
+
+    $bytes = [System.IO.File]::ReadAllBytes($dumpFile); $bytes[100] = $bytes[100] -bxor 0x01
+    [System.IO.File]::WriteAllBytes($dumpFile, $bytes)
+    & (Join-Path $PSScriptRoot 'verify-backup.ps1') -Destination $backupDir -KeyPath $keyPath -Container $Container *> $null
+    Check 'verify-backup reprova backup adulterado' ($LASTEXITCODE -eq 1)
+
+    $unprepared = Join-Path $work 'sem-marcador'
+    New-Item -ItemType Directory -Force -Path $unprepared | Out-Null
+    & (Join-Path $PSScriptRoot 'backup.ps1') -Destination $unprepared -Database $src -KeyPath $keyPath -AllowSameDiskForTesting 2>$null 3>$null | Out-Null
+    Check 'destino sem marcador: código 2 e nada gravado' ($LASTEXITCODE -eq 2 -and @(Get-ChildItem $unprepared).Count -eq 0)
+
+    $freeLetter = [char[]](90..68) | Where-Object { -not (Test-Path "$($_):\") } | Select-Object -First 1
+    & (Join-Path $PSScriptRoot 'backup.ps1') -Destination "$($freeLetter):\pm-backups" -Database $src -KeyPath $keyPath 2>$null 3>$null | Out-Null
+    Check "dispositivo desconectado ($($freeLetter):): código 2, sem destino alternativo" ($LASTEXITCODE -eq 2 -and -not (Test-Path "$($freeLetter):\"))
+
+    $outsideTemp = Join-Path $PSScriptRoot 'nao-deve-existir'
+    $refused = try { & (Join-Path $PSScriptRoot 'backup.ps1') -Destination $outsideTemp -Database $src -KeyPath $keyPath -InitializeDestination -AllowSameDiskForTesting 3>$null | Out-Null; $false } catch { $true }
+    Check 'flag de teste recusada fora da pasta temporária' ($refused -and -not (Test-Path $outsideTemp))
 } catch {
     Check 'execução' $false $_.Exception.Message
 } finally {
