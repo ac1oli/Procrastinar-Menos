@@ -19,6 +19,11 @@ class MemoryResource extends JsonResource
     {
         $lastActivity = collect([$this->last_used_at, $this->last_reviewed_at, $this->confirmed_at, $this->created_at])->filter()->max();
         $embedding = $this->relationLoaded('embedding') ? $this->embedding : null;
+        // Uma consulta por requisição, não uma por memória da listagem.
+        if (! $request->attributes->has('nexo.active_embedding_model')) {
+            $request->attributes->set('nexo.active_embedding_model', EmbeddingModel::active()?->id);
+        }
+        $activeModelId = $request->attributes->get('nexo.active_embedding_model');
 
         return [
             'id' => $this->id,
@@ -36,7 +41,7 @@ class MemoryResource extends JsonResource
             ],
             'semantic_index' => $embedding
                 && $embedding->content_hash === $this->content_hash
-                && $embedding->embedding_model_id === EmbeddingModel::active()?->id ? 'ready' : 'pending',
+                && $embedding->embedding_model_id === $activeModelId ? 'ready' : 'pending',
             'created_at' => $this->created_at?->toIso8601String(),
             'confirmed_at' => $this->confirmed_at?->toIso8601String(),
             'last_used_at' => $this->last_used_at?->toIso8601String(),
