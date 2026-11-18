@@ -55,7 +55,9 @@ docker exec -e RUN_OLLAMA_TESTS=1 pm-ai-service python -m pytest -q -m integrati
 ollama list
 cd dashboard; pnpm test; pnpm typecheck; pnpm lint; pnpm build   # dashboard (sem rede)
 pwsh infrastructure/scripts/e2e-db.ps1; cd dashboard; pnpm test:contract; pnpm test:e2e   # contrato + Chromium, backend isolado
-pwsh infrastructure/scripts/e2e-db.ps1 -Down            # remove banco e container de E2E
+pwsh infrastructure/scripts/e2e-db.ps1 -Down            # remove banco e containers de E2E
+pwsh infrastructure/scripts/publish-dashboard.ps1       # build + publica o dashboard em :8000 (-List/-Rollback/-Unpublish)
+cd dashboard; pnpm test:e2e:laravel                     # Chromium contra o dashboard servido pelo Laravel (:8010/:8011)
 ```
 
 ## Armadilhas conhecidas
@@ -82,3 +84,6 @@ pwsh infrastructure/scripts/e2e-db.ps1 -Down            # remove banco e contain
 - Não usar o CLI do shadcn: ele instalou um pacote `cn` alheio (ADR-0009). Componentes em `src/components/ui`.
 - Teste de contrato e E2E do dashboard usam `procrastinar_menos_e2e` (`pm-backend-e2e`, :8010); nunca o banco principal.
 - Não instalar Chrome/Edge: o E2E usa só o Chromium sem janela do Playwright (`--only-shell`), autorizado pelo proprietário.
+- Dashboard em produção local: mudou o código do dashboard? Republique (`publish-dashboard.ps1`); `:8000` não recarrega sozinho.
+- Cookies de `localhost` não distinguem porta: não misture `:8000`, `:8010` e `:8011` no mesmo navegador.
+- Laravel 13 aceita escrita sem token CSRF quando o navegador envia `Sec-Fetch-Site: same-origin`; não trate isso como falha.

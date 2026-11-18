@@ -53,7 +53,7 @@ tabelas); as tabelas do NEXO têm Row-Level Security forçada por `user_id`. Mem
 |---|---|---|
 | `backend/` | Regras de negócio, autenticação (Sanctum), autorização por usuário (policies), dispositivos, rotinas, foco, conhecimento, memória do NEXO, auditoria, APIs REST e WebSockets (Reverb) | Inferência de IA |
 | `ai-service/` | Prompts, RAG, embeddings, classificação de conteúdo, adaptadores de provedores | Guardar estado de usuário; decidir autorização |
-| `dashboard/` | Interface web (React + TS), mesma origem da API via proxy, sessão HttpOnly ([ADR-0009](docs/decisions/0009-dashboard-react.md)) | Regras de negócio, autorização, guardar credenciais |
+| `dashboard/` | Interface web (React + TS), servida pelo Laravel na mesma origem da API (em dev, proxy do Vite), sessão HttpOnly ([ADR-0009](docs/decisions/0009-dashboard-react.md), [ADR-0010](docs/decisions/0010-dashboard-na-mesma-origem.md)) | Regras de negócio, autorização, guardar credenciais |
 | `desktop-agent/` | Observar apps/processos (com consentimento), aplicar regras de foco localmente, fila offline | Capturar teclado, telas ou conteúdo privado |
 | `mobile/` | Uso de apps (UsageStatsManager), restrições permitidas pelo Android, fila offline | Prometer controle absoluto do dispositivo |
 | `browser-extension/` | Domínio/URL/título da aba, classificação, bloqueio de sites | Ler formulários, senhas, mensagens |
@@ -121,3 +121,4 @@ Modelo local: ver [ADR-0004](docs/decisions/0004-modelo-local.md).
 - [ADR-0007](docs/decisions/0007-servico-de-ia-contrato-e-resiliencia.md) — Serviço de IA: contrato, segurança e resiliência
 - [ADR-0008](docs/decisions/0008-memoria-do-nexo.md) — Memória do NEXO: histórico, memória de longo prazo e contexto temporário (aceita; ver [arquitetura da memória](docs/architecture/memoria-do-nexo.md))
 - [ADR-0009](docs/decisions/0009-dashboard-react.md) — Dashboard React: arquitetura, sessão e testes
+- [ADR-0010](docs/decisions/0010-dashboard-na-mesma-origem.md) — Dashboard servido pelo Laravel, na mesma origem da API

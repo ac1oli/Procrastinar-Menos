@@ -7,8 +7,11 @@ Complementa o [CLAUDE.md da raiz](../CLAUDE.md). Leia-o primeiro.
   Não instale PHP no Windows. Rode tudo com `docker exec pm-backend …`.
 - Banco: container `pm-postgres`. Testes usam `procrastinar_menos_test`
   (forçado em `phpunit.xml` via `<env>` **e** `<server>` — não remova).
-- O servidor é `php -S` com o roteador do Laravel, não `artisan serve`
-  (que descarta as `DB_*` do ambiente).
+- O servidor é `php -S` com o roteador `backend/server.php` (estáticos do dashboard com cache,
+  resto para o roteador do Laravel), não `artisan serve` (que descarta as `DB_*` do ambiente).
+  Mudou o `server.php`? `docker restart pm-backend`.
+- O dashboard é servido por `routes/dashboard.php`, **fora do grupo `web`** (sem sessão/cookies).
+  Nova rota de backend fora de `/api`? Inclua o prefixo na exclusão do fallback (ADR-0010).
 
 ## Convenções
 - Código novo de domínio vai em `app/Modules/<Modulo>/` (Models, Enums,

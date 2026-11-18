@@ -5,6 +5,17 @@
 
 ## Onde paramos (2026-11-18)
 
+- **FASE 4 em andamento** (branches `feat/fase4-*`, aguardando revisão do proprietário antes da `main`):
+  - **ETAPA 1, dashboard em produção local:** pronta em `feat/fase4-dashboard-producao`
+    ([ADR-0010](docs/decisions/0010-dashboard-na-mesma-origem.md),
+    [guia](docs/operations/dashboard-publicacao.md)).
+    - O Laravel serve o dashboard em `:8000`, na mesma origem da API.
+    - Versões imutáveis com ponteiro (`publish-dashboard.ps1`: publicar, listar, reverter,
+      retirar do ar).
+    - Cache imutável para os arquivos com hash, `index.html` sem cache e com CSP, interface sem
+      sessão.
+    - Testes: backend 213; Chromium 19 contra o Laravel + 12 via Vite.
+
 - FASE 3: **memória do NEXO integrada na `main`** após revisão final (migrations, RLS,
   permissões do `pm_runtime`, exclusões, segredos, conflitos).
   - Backend: 203 testes. ai-service: 63 testes + 4 de integração com o Ollama real.
@@ -98,6 +109,7 @@
 - [x] Testes do dashboard: 40 de tela (Vitest + MSW) + 9 de contrato + 12 ponta a ponta no Chromium (Playwright), com backend e IA reais em banco isolado
 
 ## FASE 4 — Primeira versão funcional
+- [x] Dashboard servido pelo Laravel na mesma origem, com versões e reversão (ADR-0010), em revisão
 - [ ] Cadastro/login, perfil, onboarding em etapas
 - [ ] Dashboard inicial, rotina, objetivos, dispositivos
 - [ ] Conversa básica com o NEXO usando contexto autorizado

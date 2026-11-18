@@ -41,7 +41,8 @@ pnpm build
 # Contrato com o backend REAL e a IA real, em banco isolado (nunca o principal):
 pwsh ../infrastructure/scripts/e2e-db.ps1        # recria procrastinar_menos_e2e e sobe pm-backend-e2e
 pnpm test:contract
-pnpm test:e2e                                     # Chromium real: fluxo completo + celular
+pnpm test:e2e                                     # Chromium real: fluxo completo + celular (via Vite)
+pnpm test:e2e:laravel                             # o mesmo + produção, com o dashboard servido pelo Laravel
 pwsh ../infrastructure/scripts/e2e-db.ps1 -Down  # opcional: remove o banco e o container de E2E
 ```
 

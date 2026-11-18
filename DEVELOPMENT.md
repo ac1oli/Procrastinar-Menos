@@ -115,6 +115,14 @@ cd ..; pwsh infrastructure/scripts/e2e-db.ps1 -Down  # remove banco e container 
 
 Detalhes em [dashboard/README.md](dashboard/README.md).
 
+### Dashboard servido pelo Laravel (produção local)
+
+```powershell
+pwsh infrastructure/scripts/publish-dashboard.ps1   # http://localhost:8000
+```
+
+Publicação, versões, reversão e testes: [docs/operations/dashboard-publicacao.md](docs/operations/dashboard-publicacao.md).
+
 ## 8. Demais componentes
 
 Cada pasta terá seu próprio guia ao ser inicializada: `desktop-agent/`, `mobile/`,
