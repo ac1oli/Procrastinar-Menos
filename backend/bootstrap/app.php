@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -17,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Dashboard sem nenhum grupo de middleware (sem sessão/cookies). ADR-0010.
+        then: fn () => Route::group([], __DIR__.'/../routes/dashboard.php'),
     )
     ->withCommands([
         __DIR__.'/../app/Modules/Audit/Console',

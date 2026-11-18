@@ -7,6 +7,7 @@ use App\Modules\Conversations\Listeners\ApplyHistoryRevocation;
 use App\Modules\Memory\Listeners\ApplyMemoryRevocation;
 use App\Modules\Nexo\Contracts\NexoGateway;
 use App\Modules\Nexo\Gateway\HttpNexoGateway;
+use App\Modules\Web\DashboardRelease;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -32,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
             queryEmbedTimeout: (float) config('nexo.ai_service.query_embed_timeout'),
             suggestTimeout: (float) config('nexo.ai_service.suggest_timeout'),
         ));
+
+        $this->app->bind(DashboardRelease::class, fn () => new DashboardRelease((string) config('dashboard.path')));
     }
 
     /**
