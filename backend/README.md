@@ -60,7 +60,11 @@ Regras: cada módulo só acessa suas tabelas; toda tabela pessoal tem
 | POST | `/api/auth/register` | — (sessão SPA, throttle 5/min) | Cria conta e inicia sessão |
 | POST | `/api/auth/login` | — (sessão SPA, throttle 5/min) | Inicia sessão |
 | POST | `/api/auth/logout` | usuário | Encerra sessão |
-| GET | `/api/me` | usuário | Perfil |
+| GET | `/api/me` | usuário | Perfil (com `timezone_details`: deslocamento, horário de verão, próxima mudança) |
+| PATCH | `/api/me` | usuário | Nome de exibição e fuso (IANA) |
+| PUT | `/api/me/email` | usuário (+ senha) | Troca o e-mail de acesso |
+| PUT | `/api/me/password` | usuário (+ senha) | Troca a senha e encerra as outras sessões |
+| GET | `/api/timezones` | usuário | Fusos aceitos (a mesma lista da validação) |
 | DELETE | `/api/me` | usuário (+ senha) | Exclui a conta ([política](../docs/security/retencao-de-dados.md)) |
 | GET/POST | `/api/devices` | usuário | Lista / vincula (token retornado **uma vez**, com validade) |
 | GET/PATCH/DELETE | `/api/devices/{id}` | usuário | Ver / renomear ou consentimento / revogar |

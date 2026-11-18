@@ -38,11 +38,15 @@ listados em `retained_on_account_deletion`:
 
 `auth.registered`, `auth.login`, `device.linked`, `device.revoked`,
 `device.token_reissued`, `device.token_rotated`, `device.monitoring_enabled`,
-`device.monitoring_disabled`, `account.deleted`.
+`device.monitoring_disabled`, `account.email_changed`, `account.password_changed`,
+`account.deleted`.
 
 Esses registros ficam **anonimizados**: `user_id`, `ip_address`, `metadata` e
 `subject_id` viram `NULL`. Resta somente o tipo de evento, o tipo do objeto e a data.
-Os demais eventos (ex.: `auth.logout`) são **excluídos**.
+Os demais eventos (ex.: `auth.logout`, `account.profile_updated`) são **excluídos**.
+
+Os eventos de perfil registram só **quais** campos mudaram (`metadata.fields`), nunca os
+valores: nome, fuso e e-mail novos não vão para a auditoria.
 
 Um evento `account.deleted`, também sem identificadores, registra que a exclusão ocorreu.
 Todos seguem o prazo geral de 365 dias.

@@ -15,6 +15,12 @@
     - Cache imutável para os arquivos com hash, `index.html` sem cache e com CSP, interface sem
       sessão.
     - Testes: backend 213; Chromium 19 contra o Laravel + 12 via Vite.
+  - **ETAPA 2, perfil e fuso:** pronta em `feat/fase4-perfil` (sobre a ETAPA 1). Sem migration.
+    - Tela `/perfil`: nome de exibição, fuso, e-mail e senha.
+    - Fuso calculado no backend (deslocamento, horário de verão, próxima mudança) e aplicado ao
+      NEXO na mensagem seguinte; o nome continua fora da IA.
+    - Trocar a senha encerra as outras sessões.
+    - Datas no fuso da conta; prazos sem hora não voltam mais um dia.
 
 - FASE 3: **memória do NEXO integrada na `main`** após revisão final (migrations, RLS,
   permissões do `pm_runtime`, exclusões, segredos, conflitos).
@@ -110,7 +116,8 @@
 
 ## FASE 4 — Primeira versão funcional
 - [x] Dashboard servido pelo Laravel na mesma origem, com versões e reversão (ADR-0010), em revisão
-- [ ] Cadastro/login, perfil, onboarding em etapas
+- [ ] Cadastro/login, onboarding em etapas
+- [x] Perfil e fuso (nome, fuso IANA com horário de verão, e-mail, senha), em revisão
 - [ ] Dashboard inicial, rotina, objetivos, dispositivos
 - [ ] Conversa básica com o NEXO usando contexto autorizado
 - [ ] Configurações básicas e painel "Meus dados"
