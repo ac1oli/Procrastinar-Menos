@@ -12,8 +12,10 @@ import { FullScreenStatus } from '@/features/auth/guards'
 import { ThemeProvider } from '@/lib/theme'
 
 // Cada página vira um pedaço separado do bundle, carregado ao navegar.
-const page = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) =>
-  lazy(() => load().then((m) => ({ default: m[name] })))
+// Se o trecho sumiu do servidor (publicação nova), main.tsx recarrega a página e o import
+// resolve sem módulo: a tela fica no carregamento até o recarregamento, sem erro de script.
+const page = <K extends string>(load: () => Promise<Record<K, ComponentType> | undefined>, name: K) =>
+  lazy(() => load().then((m) => (m ? { default: m[name] } : new Promise<never>(() => {}))))
 
 const ChatPage = page(() => import('@/features/chat/ChatPage'), 'ChatPage')
 const ConversationPage = page(() => import('@/features/history/HistoryPages'), 'ConversationPage')

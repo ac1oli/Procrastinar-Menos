@@ -8,7 +8,10 @@ import { defineConfig } from 'vite'
 // na mesma origem: o cookie de sessão é HttpOnly e não há CORS nem tokens no navegador.
 const apiTarget = process.env.PM_API_URL ?? 'http://127.0.0.1:8000'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Em produção o Laravel serve o index.html e os arquivos ficam em /app/ (ADR-0010).
+  // O dev server continua na raiz, com proxy para a API.
+  base: command === 'build' ? '/app/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   server: {
@@ -22,6 +25,8 @@ export default defineConfig({
   },
   preview: { host: 'localhost', port: 4173 },
   build: {
+    // Sem source maps em produção: o código-fonte não fica exposto pelo servidor.
+    sourcemap: false,
     rollupOptions: {
       output: {
         // Bibliotecas mudam menos que o código do app: ficam em arquivos próprios no cache.
@@ -42,4 +47,4 @@ export default defineConfig({
     // O contrato fala com o backend real isolado: roda só com `pnpm test:contract`.
     exclude: ['src/contract/**', 'node_modules/**'],
   },
-})
+}))
