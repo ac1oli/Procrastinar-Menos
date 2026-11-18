@@ -104,6 +104,32 @@ services:
       backend:
         condition: service_started
 
+  # Backend isolado para o teste de contrato do dashboard (perfil "e2e"):
+  # banco próprio (procrastinar_menos_e2e), fila síncrona, nunca toca o banco principal.
+  # Subir: docker compose ... --profile e2e up -d backend-e2e
+  backend-e2e:
+    image: procrastinar-menos/backend-dev:local
+    container_name: pm-backend-e2e
+    profiles: ["e2e"]
+    working_dir: /app
+    volumes:
+      - ../../backend:/app
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: procrastinar_menos_e2e
+      DB_USERNAME: ${POSTGRES_RUNTIME_USER}
+      DB_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD}
+      QUEUE_CONNECTION: sync
+      NEXO_AI_SERVICE_URL: http://ai-service:8100
+      NEXO_AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+    ports:
+      - "127.0.0.1:8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # O backend continua funcionando sem este serviço (ADR-0003); por isso
   # não há depends_on dele no backend.
   ai-service:
