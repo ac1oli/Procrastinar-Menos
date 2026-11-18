@@ -104,9 +104,10 @@ services:
       backend:
         condition: service_started
 
-  # Backend isolado para o teste de contrato do dashboard (perfil "e2e"):
+  # Backend isolado para os testes de contrato e E2E do dashboard (perfil "e2e"):
   # banco próprio (procrastinar_menos_e2e), fila síncrona, nunca toca o banco principal.
-  # Subir: docker compose ... --profile e2e up -d backend-e2e
+  # Também serve o dashboard publicado (mesma pasta backend/), para o E2E da produção local.
+  # Subir/remover: pwsh infrastructure/scripts/e2e-db.ps1 [-Down]
   backend-e2e:
     image: procrastinar-menos/backend-dev:local
     container_name: pm-backend-e2e
@@ -114,7 +115,7 @@ services:
     working_dir: /app
     volumes:
       - ../../backend:/app
-    environment:
+    environment: &backend-e2e-env
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
@@ -122,10 +123,31 @@ services:
       DB_USERNAME: ${POSTGRES_RUNTIME_USER}
       DB_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD}
       QUEUE_CONNECTION: sync
+      APP_URL: http://localhost:8010
+      SANCTUM_STATEFUL_DOMAINS: localhost:5173,localhost:8010,localhost:8011
       NEXO_AI_SERVICE_URL: http://ai-service:8100
       NEXO_AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
     ports:
       - "127.0.0.1:8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Mesmo banco isolado, mas com a IA apontando para uma porta fechada: testa de verdade
+  # a indisponibilidade da IA sem parar o pm-ai-service (usado pelo backend principal).
+  backend-e2e-sem-ia:
+    image: procrastinar-menos/backend-dev:local
+    container_name: pm-backend-e2e-sem-ia
+    profiles: ["e2e"]
+    working_dir: /app
+    volumes:
+      - ../../backend:/app
+    environment:
+      <<: *backend-e2e-env
+      APP_URL: http://localhost:8011
+      NEXO_AI_SERVICE_URL: http://ai-service:9
+    ports:
+      - "127.0.0.1:8011:8000"
     depends_on:
       postgres:
         condition: service_healthy

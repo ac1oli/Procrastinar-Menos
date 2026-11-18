@@ -19,8 +19,9 @@ WORKDIR /app
 
 EXPOSE 8000
 
-# Servidor embutido do PHP com o roteador do Laravel. Não usamos
-# `php artisan serve` porque ele repassa ao processo filho só uma lista fixa
-# de variáveis de ambiente, descartando as DB_* injetadas pelo compose.
+# Servidor embutido do PHP com roteador próprio (backend/server.php): serve os
+# arquivos do dashboard com cabeçalhos de cache e entrega o resto ao roteador do
+# Laravel (ADR-0010). Não usamos `php artisan serve` porque ele repassa ao processo
+# filho só uma lista fixa de variáveis de ambiente, descartando as DB_* do compose.
 # O roteador usa getcwd() como pasta pública, por isso o `cd public`.
-CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../server.php"]
