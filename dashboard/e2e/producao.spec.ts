@@ -204,3 +204,49 @@ test.describe('servido pelo Laravel', () => {
     await context.close()
   })
 })
+
+test.describe('perfil e fuso', () => {
+  test('nome e fuso mudam o painel; trocar a senha derruba a outra sessão e mantém esta', async ({ browser }) => {
+    const { context, page, email } = await newAccount(browser, currentBaseURL(), 'Pessoa Perfil')
+
+    // Segunda sessão da mesma conta, como outro navegador.
+    const other = await browser.newContext({ baseURL: currentBaseURL() })
+    const otherPage = await other.newPage()
+    await otherPage.goto('/entrar')
+    await otherPage.getByLabel('E-mail').fill(email)
+    await otherPage.getByLabel('Senha').fill(password)
+    await otherPage.getByRole('button', { name: 'Entrar' }).click()
+    await expect(otherPage.getByRole('heading', { name: /Pessoa\./ })).toBeVisible()
+
+    await page.goto('/perfil')
+    await page.getByLabel('Nome').fill('Renomeada Perfil')
+    await page.getByRole('button', { name: 'Salvar nome' }).click()
+    await page.getByLabel('Filtrar fusos').fill('New_York')
+    await page.getByLabel('Fuso da conta').selectOption('America/New_York')
+    await page.getByRole('button', { name: 'Salvar fuso' }).click()
+    await expect(page.getByRole('status', { name: 'Situação do fuso atual' })).toContainText(/America\/New_York · UTC−0[45]:00/)
+    await expect(page.getByRole('status', { name: 'Situação do fuso atual' })).toContainText('Próxima mudança de horário')
+
+    await page.getByLabel('Senha atual', { exact: true }).last().fill(password)
+    await page.getByLabel('Nova senha', { exact: true }).fill('novaSenhaFicticia789')
+    await page.getByLabel('Confirme a nova senha').fill('novaSenhaFicticia789')
+    await page.getByRole('button', { name: 'Alterar senha' }).click()
+    await expect(page.getByText(/1 outra\(s\) sessão\(ões\) foram encerradas/)).toBeVisible()
+
+    expect(await apiStatus(otherPage, '/api/me')).toBe(401)
+    expect(await apiStatus(page, '/api/me')).toBe(200)
+
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: /Renomeada\./ })).toBeVisible()
+
+    // Exclui a conta com a senha nova.
+    await page.goto('/privacidade')
+    await page.getByRole('button', { name: 'Excluir minha conta' }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Confirme sua senha').fill('novaSenhaFicticia789')
+    await dialog.getByRole('button', { name: 'Excluir conta' }).click()
+    await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
+    await other.close()
+    await context.close()
+  })
+})

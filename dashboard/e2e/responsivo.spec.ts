@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test'
 
 import { choose, fakeEmail, password, register } from './helpers'
 
-const pages = ['/', '/conversar', '/historico', '/memorias', '/rotina', '/objetivos', '/privacidade']
+const pages = ['/', '/conversar', '/historico', '/memorias', '/rotina', '/objetivos', '/privacidade', '/perfil']
 
 test('no celular, todas as telas cabem na largura e o menu navega', async ({ page }) => {
   await register(page, 'Pessoa Celular', fakeEmail('e2e-celular'))

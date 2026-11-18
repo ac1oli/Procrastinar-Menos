@@ -9,7 +9,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { ApiError } from '@/api/client'
-import { auth, consents, conversations, exports, goals, memories, nexo, preferences, routine, suggestions } from '@/api/endpoints'
+import { auth, consents, conversations, exports, goals, memories, nexo, preferences, profile, routine, suggestions } from '@/api/endpoints'
 import type { ConsentScopeId } from '@/api/types'
 import { todayIso } from '@/lib/labels'
 
@@ -53,6 +53,22 @@ describe('contrato dashboard ↔ backend real', () => {
     const final = await consents.revoke('nexo.memory.sensitive')
     expect(final.pending).toEqual([])
     await expectApiError(consents.grant('nexo.memory.sensitive', 'politica-antiga'), 422)
+  })
+
+  it('perfil: nome, fuso com horário de verão calculado no backend, e-mail e senha', async () => {
+    expect(await profile.timezones()).toContain('America/New_York')
+    const updated = await profile.update({ name: '  Pessoa   Contrato  ', timezone: 'America/New_York' })
+    expect(updated.name).toBe('Pessoa Contrato')
+    expect(updated.timezone_details.offset).toMatch(/^-0[45]:00$/)
+    expect(updated.timezone_details.next_transition?.offset).toMatch(/^-0[45]:00$/)
+
+    const invalid = await expectApiError(profile.update({ timezone: 'America/Atlantida' }), 422)
+    expect(invalid.field('timezone')).toMatch(/IANA/)
+    await expectApiError(profile.updateEmail('outro@example.com', 'senhaErrada123'), 422)
+    await expectApiError(profile.updatePassword({ current_password: password, password: password, password_confirmation: password }), 422)
+
+    // Volta ao fuso usado pelos demais testes.
+    expect((await profile.update({ timezone })).timezone_details.next_transition).toBeNull()
   })
 
   it('rotina e objetivos', async () => {
