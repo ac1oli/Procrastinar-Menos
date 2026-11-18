@@ -5,6 +5,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 
 import { choose, expectNoCredentialsInBrowser, fakeEmail, password, register, trackOrigins } from './helpers'
+import { currentBaseURL } from './target'
 
 const AI_TIMEOUT = 240_000
 const email = fakeEmail('e2e')
@@ -20,7 +21,7 @@ let origins: Set<string>
 const consoleErrors: string[] = []
 
 test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext({ baseURL: 'http://localhost:5173', locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
+  context = await browser.newContext({ baseURL: currentBaseURL(), locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
   page = await context.newPage()
   origins = trackOrigins(page)
   page.on('console', (msg) => {
@@ -231,6 +232,6 @@ test('sair, entrar de novo e excluir a conta', async () => {
 })
 
 test('nenhuma requisição saiu da origem do dashboard e não houve erro de script', () => {
-  expect([...origins]).toEqual(['http://localhost:5173'])
+  expect([...origins]).toEqual([currentBaseURL()])
   expect(consoleErrors).toEqual([])
 })
