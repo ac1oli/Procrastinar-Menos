@@ -65,6 +65,7 @@ Regras: cada módulo só acessa suas tabelas; toda tabela pessoal tem
 | PUT | `/api/me/email` | usuário (+ senha) | Troca o e-mail de acesso |
 | PUT | `/api/me/password` | usuário (+ senha) | Troca a senha e encerra as outras sessões |
 | GET | `/api/timezones` | usuário | Fusos aceitos (a mesma lista da validação) |
+| GET | `/api/me/data-summary` | usuário | Inventário para "Meus dados" (só contagens e datas, sem conteúdo) |
 | DELETE | `/api/me` | usuário (+ senha) | Exclui a conta ([política](../docs/security/retencao-de-dados.md)) |
 | GET/POST | `/api/devices` | usuário | Lista / vincula (token retornado **uma vez**, com validade) |
 | GET/PATCH/DELETE | `/api/devices/{id}` | usuário | Ver / renomear ou consentimento / revogar |

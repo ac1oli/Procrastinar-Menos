@@ -21,6 +21,22 @@
       NEXO na mensagem seguinte; o nome continua fora da IA.
     - Trocar a senha encerra as outras sessões.
     - Datas no fuso da conta; prazos sem hora não voltam mais um dia.
+  - **ETAPA 3, central "Meus dados":** pronta em `feat/fase4-meus-dados` (sobre a ETAPA 2). Sem
+    migration. `/meus-dados` substitui `/privacidade` (o endereço antigo redireciona).
+    - Conta e inventário com contagens do backend (`/api/me/data-summary`, sem conteúdo).
+    - Autorizações, retenção, exportação e histórico de decisões reaproveitados.
+    - Exclusões com prévia de impacto: histórico, memórias e conta. Uma só implementação, usada
+      também no Histórico e nas Memórias.
+    - A exportação passa a incluir perfil, rotina, objetivos e dispositivos, sem credenciais.
+  - **ETAPA 4, sessão anônima:** investigada em `docs/investigacao-sessao-anonima`. Origem: um
+    `GET /` do Firefox 160 desta máquina; o motivo da navegação não é determinável sem o
+    histórico do navegador.
+  - **Testes ao fim da FASE 4:**
+    - backend 228;
+    - telas 53;
+    - contrato 11;
+    - Chromium: 21 contra o Laravel + 12 via Vite;
+    - lint, tipos e build limpos.
 
 - FASE 3: **memória do NEXO integrada na `main`** após revisão final (migrations, RLS,
   permissões do `pm_runtime`, exclusões, segredos, conflitos).
@@ -65,11 +81,12 @@
     - sessão só em cookie HttpOnly;
     - Vitest 3 → 4 para corrigir avisos críticos do `tinypool` e do `@vitest/mocker`
       (ferramentas de teste, fora do build).
-- **Próxima ação (FASE 4):**
-  - servir o dashboard na mesma origem da API em produção;
-  - perfil e fuso editáveis;
-  - painel "Meus dados" completo;
-  - E2E no CI quando houver CI.
+- **Próxima ação:**
+  1. Revisão do proprietário das branches da FASE 4, nesta ordem (empilhadas):
+     `feat/fase4-dashboard-producao` → `feat/fase4-perfil` → `feat/fase4-meus-dados`; e
+     `docs/investigacao-sessao-anonima`.
+  2. Depois: onboarding em etapas, gestão de dispositivos (com os agentes da FASE 5) e E2E no CI
+     quando houver CI.
 
 ## FASE 1 — Diagnóstico e planejamento ✅
 - [x] Inspeção de hardware, SO e ferramentas ([diagnóstico](docs/diagnostics/2026-11-16-fase1.md))
@@ -120,7 +137,7 @@
 - [x] Perfil e fuso (nome, fuso IANA com horário de verão, e-mail, senha), em revisão
 - [ ] Dashboard inicial, rotina, objetivos, dispositivos
 - [ ] Conversa básica com o NEXO usando contexto autorizado
-- [ ] Configurações básicas e painel "Meus dados"
+- [x] Central "Meus dados" (inventário, autorizações, retenção, exportação, exclusões com prévia), em revisão
 
 ## FASE 5 — Evolução dos módulos
 - [ ] Agente Windows (.NET) · [ ] Extensão Chrome/Edge · [ ] App Android
@@ -138,7 +155,7 @@
 - ~~Senha do banco curta~~ → rotacionada em 2026-11-17.
 - ~~Retenção de `audit_logs`~~ → ADR-0006. Prazos de 90/365 dias a revisar juridicamente na FASE 6.
 - Pareamento de dispositivos por código curto: FASE 5.
-- Exportação: dados do NEXO prontos (`/api/me/exports`); perfil, rotina, objetivos e dispositivos na FASE 4.
+- ~~Exportação só do NEXO~~ → inclui perfil, rotina, objetivos e dispositivos (FASE 4, etapa 3).
 - Primeira mensagem após o modelo ficar ocioso leva ~25 s (carga na GPU); avaliar `keep_alive` maior ou pré-aquecimento.
 - `fastapi.testclient` emite aviso de depreciação (Starlette recomenda `httpx2`); acompanhar na próxima atualização de dependências.
 - Backup não agendado e BitLocker desligado no `C:`: ambos aguardam o dispositivo externo e nova autorização do proprietário.

@@ -68,8 +68,9 @@ feita.
 
 ## 5. Pendências conhecidas
 
-- Exportação: os dados do NEXO já são exportáveis (`POST /api/me/exports`); perfil, rotinas,
-  objetivos e dispositivos entram no painel "Meus dados" (FASE 4).
+- Exportação (`POST /api/me/exports`, central "Meus dados"): perfil, rotina, objetivos,
+  dispositivos (sem credenciais) e todos os dados do NEXO. Ficam de fora a senha, os tokens,
+  os embeddings e a auditoria.
 - Backups: dados excluídos persistem nos arquivos de backup até a rotação (no máximo ~35 dias);
   restaurações reaplicam as exclusões ([backup-e-restauracao.md](backup-e-restauracao.md)).
   Os backups agendados dependem de um dispositivo físico separado.

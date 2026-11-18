@@ -52,7 +52,7 @@ pwsh ../infrastructure/scripts/e2e-db.ps1 -Down  # opcional: remove o banco e o 
 src/
   api/          client.ts (CSRF, sessão, erros tipados) · endpoints.ts (uma função por rota) · types.ts
   components/   ui/ (padrão shadcn sobre radix-ui) · layout/ (AppShell, marca NEXO) · ConfirmDialog
-  features/     auth · onboarding · home · chat · history · memories · privacy · planning
+  features/     auth · onboarding · home · chat · history · memories · privacy (Meus dados) · profile · data (exclusões com prévia) · planning
   lib/          labels (textos pt-BR) · theme (claro/escuro/sistema) · utils
   test/         server.ts (backend falso com as regras do real) · render.tsx · setup.ts
   contract/     teste de contrato contra o backend real
