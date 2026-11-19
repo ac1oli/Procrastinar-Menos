@@ -3,10 +3,16 @@
 > Atualize este arquivo ao fim de cada etapa. A seção **"Onde paramos"**
 > deve permitir que a próxima sessão continue exatamente daqui.
 
-## Onde paramos (2026-11-18)
+## Onde paramos (2026-11-19)
 
-- **FASE 4 em andamento** (branches `feat/fase4-*`, aguardando revisão do proprietário antes da `main`):
-  - **ETAPA 1, dashboard em produção local:** pronta em `feat/fase4-dashboard-producao`
+- **FASE 4 integrada na `main`** (2026-11-19, após aprovação do proprietário): as três branches
+  empilhadas entraram por fast-forward e a investigação, por merge. Suíte completa repetida na
+  `main` e versão `20261119-072850-94990d0` publicada em `:8000`.
+  - **Aguardando:** testes manuais e avaliação do proprietário. Nenhuma funcionalidade nova antes disso.
+  - **`APP_DEBUG`:** o `.env` local continua com `true`. Proposta, a autorizar: `APP_DEBUG=false`
+    com log diário (`LOG_STACK=daily`, `LOG_DAILY_DAYS=14`). Com `false`, o navegador recebe só
+    "Server Error" e o log local mantém mensagem e pilha (verificado).
+  - **ETAPA 1, dashboard em produção local:** em `feat/fase4-dashboard-producao`
     ([ADR-0010](docs/decisions/0010-dashboard-na-mesma-origem.md),
     [guia](docs/operations/dashboard-publicacao.md)).
     - O Laravel serve o dashboard em `:8000`, na mesma origem da API.
@@ -15,20 +21,20 @@
     - Cache imutável para os arquivos com hash, `index.html` sem cache e com CSP, interface sem
       sessão.
     - Testes: backend 213; Chromium 19 contra o Laravel + 12 via Vite.
-  - **ETAPA 2, perfil e fuso:** pronta em `feat/fase4-perfil` (sobre a ETAPA 1). Sem migration.
+  - **ETAPA 2, perfil e fuso:** em `feat/fase4-perfil` (sobre a ETAPA 1). Sem migration.
     - Tela `/perfil`: nome de exibição, fuso, e-mail e senha.
     - Fuso calculado no backend (deslocamento, horário de verão, próxima mudança) e aplicado ao
       NEXO na mensagem seguinte; o nome continua fora da IA.
     - Trocar a senha encerra as outras sessões.
     - Datas no fuso da conta; prazos sem hora não voltam mais um dia.
-  - **ETAPA 3, central "Meus dados":** pronta em `feat/fase4-meus-dados` (sobre a ETAPA 2). Sem
+  - **ETAPA 3, central "Meus dados":** em `feat/fase4-meus-dados` (sobre a ETAPA 2). Sem
     migration. `/meus-dados` substitui `/privacidade` (o endereço antigo redireciona).
     - Conta e inventário com contagens do backend (`/api/me/data-summary`, sem conteúdo).
     - Autorizações, retenção, exportação e histórico de decisões reaproveitados.
     - Exclusões com prévia de impacto: histórico, memórias e conta. Uma só implementação, usada
       também no Histórico e nas Memórias.
     - A exportação passa a incluir perfil, rotina, objetivos e dispositivos, sem credenciais.
-  - **ETAPA 4, sessão anônima:** investigada em `docs/investigacao-sessao-anonima`. Origem: um
+  - **ETAPA 4, sessão anônima:** investigada ([relatório](docs/diagnostics/2026-11-18-sessao-anonima-0734.md)). Origem: um
     `GET /` do Firefox 160 desta máquina; o motivo da navegação não é determinável sem o
     histórico do navegador.
   - **Testes ao fim da FASE 4:**
@@ -132,12 +138,12 @@
 - [x] Testes do dashboard: 40 de tela (Vitest + MSW) + 9 de contrato + 12 ponta a ponta no Chromium (Playwright), com backend e IA reais em banco isolado
 
 ## FASE 4 — Primeira versão funcional
-- [x] Dashboard servido pelo Laravel na mesma origem, com versões e reversão (ADR-0010), em revisão
+- [x] Dashboard servido pelo Laravel na mesma origem, com versões e reversão (ADR-0010)
 - [ ] Cadastro/login, onboarding em etapas
-- [x] Perfil e fuso (nome, fuso IANA com horário de verão, e-mail, senha), em revisão
+- [x] Perfil e fuso (nome, fuso IANA com horário de verão, e-mail, senha)
 - [ ] Dashboard inicial, rotina, objetivos, dispositivos
 - [ ] Conversa básica com o NEXO usando contexto autorizado
-- [x] Central "Meus dados" (inventário, autorizações, retenção, exportação, exclusões com prévia), em revisão
+- [x] Central "Meus dados" (inventário, autorizações, retenção, exportação, exclusões com prévia)
 
 ## FASE 5 — Evolução dos módulos
 - [ ] Agente Windows (.NET) · [ ] Extensão Chrome/Edge · [ ] App Android
